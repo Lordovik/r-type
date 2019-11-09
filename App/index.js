@@ -74,10 +74,6 @@ class Game {
     }
     checkDeath(point, i){
         if(point.isDead()){
-			if(point.explosionTile){
-				let explosion = new Decoration( { x: point.x, y: point.y, ...point.explosionTile } );
-				this.objects.push( explosion );
-			}
 
 
 			this.objects.splice(i, 1);
@@ -114,8 +110,8 @@ class Game {
 			}
 
 			//render hitbox
-			ctx.strokeStyle = "red";
-			ctx.strokeRect(point.x, point.y, point.width, point.height);
+			// ctx.strokeStyle = "red";
+			// ctx.strokeRect(point.x, point.y, point.width, point.height);
 
 		}
 
@@ -359,7 +355,15 @@ class Point {
         point.takeDmg(this.dmg);
     }
     takeDmg(dmg){
-        this.hp -= dmg;
+		this.hp -= dmg;
+
+		if(this.hp <= 0){
+			if(this.deathExplosion){
+				let deathExplosion = new Decoration( { x: this.x, y: this.y, ...this.deathExplosion } );
+				game.objects.push( deathExplosion );
+			}
+			return;
+		}
     }
     keyHandler(){}
     tick(){}

@@ -21,7 +21,7 @@ const defaultMenuEnemy = {
         init: function(){
             this.type = "ME";
         },
-        activateMenu: function(){}
+        activateMenu: function(){},
     },
     "params": {},
 }
@@ -90,7 +90,8 @@ const defaultEnemy = {
         width: 35,
         height: 70, 
         sprite: { imgSrc: "images/enemies/enemy.png", width: 71, height: 69, offsetX: -30 },
-        explosionTile: { design: "explosion1" }
+        deathExplosion: { design: "explosion1" },
+        hitExplosion: { design: "smallExplosion" },
     },
     "ai": {
         check: function(point) {
@@ -126,6 +127,18 @@ const defaultEnemy = {
             bullet.y -= bullet.height / 2;
             game.objects.push( bullet );
         },
+        takeDmg(dmg){
+            this.hp -= dmg;
+
+            if(this.hp <= 0){
+                if(this.deathExplosion){
+                    let deathExplosion = new Decoration( { x: this.x, y: this.y, ...this.deathExplosion } );
+                    game.objects.push( deathExplosion );
+                }
+                this.die();
+                return;
+            }
+        }
     },
     "params": {
         dmg: 1,
@@ -212,6 +225,27 @@ const defaultShip = {
         bullet: { design: "shipBullet1" },
         fireRate: 8,
     },
+}
+
+const defaultBullet = {
+    "design":{
+
+    },
+    "ai":{
+        tick: function() {
+            this.moveToDir();
+        },
+        attack: function(point){
+            point.takeDmg(this.dmg);
+            if( point.hitExplosion && point.hp > 0 ){
+                let hitExplosion = new Decoration( { x: this.x + this.width/2, y: this.y - this.height/2, ...point.hitExplosion } );
+                game.objects.push(hitExplosion);
+            }
+        },
+    },
+    "params": {
+        
+    }
 }
 
 const levelList = [
@@ -572,10 +606,9 @@ const LEVELS={
                 },
 
                 "enemyBullet1": {
-                    tick: function() {
-                        if(this.ticksPassed() === 0) this.direction = { x: -1, y: 0 };
-
-                        this.moveToDir();
+                    ...defaultBullet.ai,
+                    init: function(){
+                        this.direction = { x: -1, y: 0 };
                     },
                     check: function(point) {
                         switch(point.type){
@@ -584,14 +617,13 @@ const LEVELS={
                                 this.die();
                                 break;
                             }
-                    }
+                    },
                 },
 
                 "enemyBulletUp": {
-                    tick: function() {
-                        if(this.ticksPassed() === 0) this.direction = { x: -1, y: -1 };
-
-                        this.moveToDir();
+                    ...defaultBullet.ai,
+                    init: function(){
+                        this.direction = { x: -1, y: -1 };
                     },
                     check: function(point) {
                         switch(point.type){
@@ -604,10 +636,9 @@ const LEVELS={
                 },
 
                 "enemyBulletDown": {
-                    tick: function() {
-                        if(this.ticksPassed() === 0) this.direction = { x: -1, y: 1 };
-
-                        this.moveToDir();
+                    ...defaultBullet.ai,
+                    init: function(){
+                        this.direction = { x: -1, y: 1 };
                     },
                     check: function(point) {
                         switch(point.type){
@@ -620,15 +651,16 @@ const LEVELS={
                 },
 
                 "shipBullet1": {
-                    tick: function(){
-                        if(this.ticksPassed() === 0) this.direction = { x: 1, y: 0 };
-
-                        this.moveToDir();
+                    ...defaultBullet.ai,
+                    init: function(){
+                        this.direction = { x: 1, y: 0 };
                     },
                     check: function(point) {
                         switch(point.type){
                             case 'E':
-                                if(!this.isDead()) this.attack(point);
+                                if(!this.isDead()) {
+                                    this.attack(point);
+                                }
                                 this.die();
                                 break;
                             }
@@ -658,17 +690,35 @@ const LEVELS={
             "design": {
                 "explosion1": {
                     ...defaultExplosion.design,
+                },
+                "smallExplosion": {
+                    ...defaultExplosion.design,
+                    animationOptions: {
+                        maxSteps: 8,
+                        animationRate: 3,
+                        offsetX: -20,
+                        offsetY: 20,
+                        width: 20,
+                        height: 20,
+                    }
                 }
             },
 
             "ai": {
                 "explosion1": {
                     ...defaultExplosion.ai,
+                },
+                "smallExplosion": {
+                    ...defaultExplosion.ai,
+
                 }
             },
 
             "params": {
                 "explosion1": {
+                    ...defaultExplosion.params,
+                },
+                "smallExplosion": {
                     ...defaultExplosion.params,
                 }
             }
