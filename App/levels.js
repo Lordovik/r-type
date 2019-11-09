@@ -31,8 +31,8 @@ const defaultExplosion = {
         tileSet: {
             src: "./images/explosions/explosion1.png",
             // step: 0,
-            width: 49, 
-            height: 49,
+            width: 48, 
+            height: 48,
             tiles: [
                 [0, 0],
                 [49, 0],
@@ -45,9 +45,9 @@ const defaultExplosion = {
             ],
             maxSteps: 8,
             animationRate: 3,
+            offsetX: -10,
+            offsetY: 10,
         },
-        width: 1,
-        height: 1
     },
 
     "ai": {
@@ -61,12 +61,15 @@ const defaultExplosion = {
 
         tick: function(){
             if( this.tileSet 
-                && this.animationStep < this.tileSet.maxSteps - 1 
+                && this.animationStep < this.tileSet.maxSteps - 1
                 && this.ticksPassed() % this.tileSet.animationRate === 0 ) 
             {
 
                 this.animationStep++;
 
+            }
+            else if (this.animationStep == this.tileSet.maxSteps - 1){
+                this.die();
             }
         },
 

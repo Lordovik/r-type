@@ -114,8 +114,8 @@ class Game {
 			}
 
 			//render hitbox
-			// ctx.strokeStyle = "red";
-			// ctx.strokeRect(point.x, point.y, point.width, point.height);
+			ctx.strokeStyle = "red";
+			ctx.strokeRect(point.x, point.y, point.width, point.height);
 
 		}
 
@@ -164,6 +164,7 @@ class Game {
 	// 		fireRate:36 
 	// 	} ) );
 	// }
+
 	// enemy: from LEVELS
 	genEnemy(enemy){
 		this.objects.push( new Enemy(enemy) );
@@ -250,10 +251,10 @@ class Game {
 		let img = document.createElement("img");
 		img.src = point.tileSet.src;
 
-		let tileX = point.x + point.tileSet.width / 2;
-		let tileY = point.y + point.tileSet.height / 2;
-
 		let tileSet = point.tileSet;
+
+		let tileX = point.x + (tileSet.offsetX || 0);
+		let tileY = point.y + (tileSet.offsetY || 0);
 
 		ctx.drawImage(
 			img,
