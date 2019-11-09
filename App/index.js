@@ -252,9 +252,13 @@ class Game {
 		img.src = point.tileSet.src;
 
 		let tileSet = point.tileSet;
+		let animationOptions = point.animationOptions;
 
-		let tileX = point.x + (tileSet.offsetX || 0);
-		let tileY = point.y + (tileSet.offsetY || 0);
+		let tileX = point.x + (animationOptions.offsetX || 0);
+		let tileY = point.y + (animationOptions.offsetY || 0);
+
+		let width = animationOptions.width || tileSet.width;
+		let height = animationOptions.height || tileSet.height;
 
 		ctx.drawImage(
 			img,
@@ -263,8 +267,8 @@ class Game {
 			tileSet.height,
 			tileX,
 			tileY,
-			tileSet.width,
-			tileSet.height
+			width,
+			height
 		);
 	}
 }

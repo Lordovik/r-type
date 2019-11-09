@@ -30,7 +30,6 @@ const defaultExplosion = {
     "design": {
         tileSet: {
             src: "./images/explosions/explosion1.png",
-            // step: 0,
             width: 48, 
             height: 48,
             tiles: [
@@ -43,11 +42,15 @@ const defaultExplosion = {
                 [98, 49],
                 [147, 49],
             ],
+        },
+        animationOptions: {
             maxSteps: 8,
             animationRate: 3,
             offsetX: -10,
             offsetY: 10,
-        },
+            width: 70,
+            height: 70
+        }
     },
 
     "ai": {
@@ -60,9 +63,9 @@ const defaultExplosion = {
         },
 
         tick: function(){
-            if( this.tileSet 
-                && this.animationStep < this.tileSet.maxSteps - 1
-                && this.ticksPassed() % this.tileSet.animationRate === 0 ) 
+            if( this.tileSet && this.animationOptions
+                && this.animationStep < this.animationOptions.maxSteps - 1
+                && this.ticksPassed() % this.animationOptions.animationRate === 0 ) 
             {
 
                 this.animationStep++;
