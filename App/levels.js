@@ -71,7 +71,7 @@ const defaultExplosion = {
                 this.animationStep++;
 
             }
-            else if (this.animationStep == this.tileSet.maxSteps - 1){
+            else if (this.animationStep == this.animationOptions.maxSteps - 1){
                 this.die();
             }
         },
@@ -89,7 +89,7 @@ const defaultEnemy = {
     "design": {
         width: 35,
         height: 70, 
-        sprite: { imgSrc: "images/enemies/enemy.png", width: 71, height: 69, offsetX: -30 },
+        sprite: { imgSrc: "./images/enemies/enemy.png", width: 71, height: 69, offsetX: -30 },
         deathExplosion: { design: "explosion1" },
         hitExplosion: { design: "smallExplosion" },
     },
@@ -143,9 +143,9 @@ const defaultEnemy = {
     "params": {
         dmg: 1,
         speed: { x: 10, y: 10 },
-        hp: 3,
+        hp: 10,
         bullet: { design: "enemyBullet1" },
-        fireRate: 30
+        fireRate: 20
     },
 }
 
@@ -164,21 +164,45 @@ const defaultShip = {
         },
 
         fire: function() {
-            if(!this.reload){
-                let bullet = new Bullet( { 
-                    x: this.x + this.width, 
-                    y: this.y + this.height / 2, 
-                    ...this.bullet,
-                } );
-                bullet.y -= bullet.height / 2;
-                game.objects.push( bullet );
-                this.reload = this.fireRate;
+            if(this.reload) return;
+
+            if(this.bullets){
+                for(let i = 0; i < this.bullets.length; i++){
+                    let bullet = new Bullet( { 
+                        x: this.x + this.width, 
+                        y: this.y + i * 30, 
+                        ...this.bullets[i],
+                    } );
+                    bullet.y -= bullet.height / 2;
+                    game.objects.push( bullet );
+                    this.reload = this.fireRate;
+                }
+                return;
             }
+
+            let bullet = new Bullet( { 
+                x: this.x + this.width, 
+                y: this.y + this.height / 2, 
+                ...this.bullet,
+            } );
+            bullet.y -= bullet.height / 2;
+            game.objects.push( bullet );
+            this.reload = this.fireRate;
+
+
         },
 
         check: function(point){
             switch(point.type){
                 case "E":
+                    this.attack(point);
+                    break;
+                case "U":
+                    if(!point.isDead()){
+                        for(let key in point.newParams){
+                            this[key] = point.newParams[key];
+                        }
+                    }
                     this.attack(point);
                     break;
             }
@@ -220,10 +244,10 @@ const defaultShip = {
     },
     "params": {
         dmg: 1,
-        speed: { x: 10, y: 10 },
+        speed: { x: 15, y: 20 },
         hp: 500,
         bullet: { design: "shipBullet1" },
-        fireRate: 8,
+        fireRate: 3,
     },
 }
 
@@ -248,6 +272,64 @@ const defaultBullet = {
     }
 }
 
+const defaultWall = {
+    "design": {
+        width: 90,
+        height: 90,
+        sprite: {
+            imgSrc: "./images/walls/wall1.png",
+            width: 100,
+            height: 100,
+        }
+    },
+    "ai":{
+        init: function(){
+            this.direction = { x: -1, y: 0 };
+            this.type = "W";
+            this.speed.x = game.level.speed || this.speed.x || 5;
+            this.height = game.MAP_HEIGHT - this.y;
+            this.sprite.height = game.MAP_HEIGHT - this.y - (this.sprite.offsetY || 0);
+        },
+        tick: function(){
+            this.moveToDir();
+        },
+        check: defaultEnemy.ai.check,
+    },
+    "params":{
+        hp: 1,
+        dmg: 1,
+        speed: { x: 10, y: 10}
+    }
+}
+
+const defaultUpgrade = {
+    "design": {
+        width: 30,
+        height: 30,
+        sprite: { imgSrc: "./images/upgrades/upgrade1.png", width: 30, height: 30 },
+    },
+    "ai": {
+        init: function(){
+            this.direction = { x: -1, y: 0 };
+        },
+        tick: function(){
+            this.moveToDir();
+        },
+    },
+    "params": {
+        hp: 1,
+        dmg: 0,
+        speed: { x: 10, y: 0 },
+        newParams: {
+            bullets: [
+                { design: "shipBullet1" },
+                { design: "shipBullet1" },
+                { design: "shipBullet1" },
+            ]
+        }
+    }
+}
+
 const levelList = [
     "level1",
     "level2",
@@ -266,23 +348,73 @@ const LEVELS={
     "level1":{
         enemies:[
             { tick:    50, x: 1500,y: 100, },
-            { tick:    70, x: 1500,y: 800, ai: "move12",  params: "noob"},
-            { tick:    90, x: 1500,y: 800, ai: "move12",  params: "noob"},
-            { tick:   110, x: 1500,y: 780, ai: "move12",  params: "noob"},
-            { tick:   130, x: 1500,y: 760, ai: "move12",  params: "noob"},
-            { tick:   150, x: 1500,y: 740, ai: "move12",  params: "noob"},
-            { tick:   170, x: 1500,y: 720, ai: "move12",  params: "noob",},
-            { tick: 200,x: 1500,y: 200, design: "superEnemy", },
-            { tick: 250,x: 1500,y: 300, ai: "enemy1", design: "enemy1", haveUpgrade: "upgrades", params: "enemy1", },
-            { tick: 300,x: 1500,y: 400, },
-            { tick: 350,x: 1500,y: 500, },
+            { tick:    50, x: 1500,y: 200, },
+            { tick:    50, x: 1500,y: 300, },
+            { tick:    50, x: 1500,y: 400, },
+            { tick:    50, x: 1500,y: 500, },
+            { tick:    50, x: 1500,y: 600, },
+            { tick:    60, x: 1500,y: 100, },
+            { tick:    60, x: 1500,y: 200, },
+            { tick:    60, x: 1500,y: 300, },
+            { tick:    60, x: 1500,y: 400, },
+            { tick:    60, x: 1500,y: 500, },
+            { tick:    60, x: 1500,y: 600, },
+            { tick:    70, x: 1500,y: 100, },
+            { tick:    70, x: 1500,y: 200, },
+            { tick:    70, x: 1500,y: 300, },
+            { tick:    70, x: 1500,y: 400, },
+            { tick:    70, x: 1500,y: 500, },
+            { tick:    70, x: 1500,y: 600, },
+            { tick:    80, x: 1500,y: 100, },
+            { tick:    80, x: 1500,y: 200, },
+            { tick:    80, x: 1500,y: 300, },
+            { tick:    80, x: 1500,y: 400, },
+            { tick:    80, x: 1500,y: 500, },
+            { tick:    80, x: 1500,y: 600, },
+            { tick:    90, x: 1500,y: 100, },
+            { tick:    90, x: 1500,y: 200, },
+            { tick:    90, x: 1500,y: 300, },
+            { tick:    90, x: 1500,y: 400, },
+            { tick:    90, x: 1500,y: 500, },
+            { tick:    90, x: 1500,y: 600, },
+            { tick:    100, x: 1500,y: 100, },
+            { tick:    100, x: 1500,y: 200, },
+            { tick:    100, x: 1500,y: 300, },
+            { tick:    100, x: 1500,y: 400, },
+            { tick:    100, x: 1500,y: 500, },
+            { tick:    100, x: 1500,y: 600, },
+            // { tick:    70, x: 1500,y: 800, ai: "move12",  params: "noob"},
+            // { tick:    90, x: 1500,y: 800, ai: "move12",  params: "noob"},
+            // { tick:   110, x: 1500,y: 780, ai: "move12",  params: "noob"},
+            // { tick:   130, x: 1500,y: 760, ai: "move12",  params: "noob"},
+            // { tick:   150, x: 1500,y: 740, ai: "move12",  params: "noob"},
+            // { tick:   170, x: 1500,y: 720, ai: "move12",  params: "noob",},
+            // { tick: 200,x: 1500,y: 200, design: "superEnemy", },
+            //{ tick: 50,x: 1500,y: 300, ai: "enemy1", design: "enemy1", haveUpgrade: { design:"upgrade1" }, params: "enemy1", },
+            // { tick: 300,x: 1500,y: 400, },
+            // { tick: 350,x: 1500,y: 500, },
         ],
-        ship: { x: 0, y: 500, design: "upgrade1" },
+        ship: { x: 100, y: 500, design: "upgrade1" },
         background: [
             "city1",
             "city2",
             "city3",
         ],
+        walls: [
+            { tick: 50, x: w, y: 900, design: "wall1" },
+            { tick: 60, x: w, y: 900, design: "wall1" },
+            { tick: 70, x: w, y: 900, design: "wall1" },
+            { tick: 80, x: w, y: 900, design: "wall1" },
+            { tick: 90, x: w, y: 900, design: "wall1" },
+            { tick: 100, x: w, y: 900, design: "wall1" },
+            { tick: 110, x: w, y: 900, design: "wall1" },
+            { tick: 120, x: w, y: 900, design: "wall1" },
+            { tick: 130, x: w, y: 900, design: "wall1" },
+            { tick: 140, x: w, y: 900, design: "wall1" },
+            { tick: 150, x: w, y: 900, design: "wall1" },
+            { tick: 160, x: w, y: 900, design: "wall1" },
+        ],
+        speed: 3
     },
 
     "presets": {
@@ -293,6 +425,7 @@ const LEVELS={
                     ...defaultEnemy.design,
                 }, 
                 "superEnemy":{
+                    ...defaultEnemy.design,
                     width: 35,
                     height: 55,
                     sprite: { imgSrc: "images/enemies/enemy2.png", width: 48, height: 69 }
@@ -303,6 +436,9 @@ const LEVELS={
                 },
                 "menuHighscore": {
                     ...defaultMenuEnemy.design,
+                },
+                "wall1":{
+                    ...defaultWall.design,
                 }
             },
 
@@ -316,6 +452,7 @@ const LEVELS={
                     ...defaultEnemy.ai,
                 },
                 "superEnemy": {
+                    ...defaultEnemy.ai,
                     tick: function() {
 
                         if(this.ticksPassed() === 0) this.direction = { x: -1, y: -1 };
@@ -332,13 +469,6 @@ const LEVELS={
                             this.fire();
                         }
                     },
-                    check: function(point) {
-                        switch(point.type){
-                            case 'S':
-                                this.attack(point);
-                                break;
-                        }
-                    },
                     fire: function() {
                         for(let i = 0; i < this.bullets.length; i++){
                             let bullet = new Bullet( { 
@@ -353,7 +483,6 @@ const LEVELS={
                 },
                 "move12": {
                     tick: function() {
-                        //console.log(this.ticksPassed());
                         if(this.ticksPassed() === 0) {
                             this.direction = { x: -1, y: 0 };
                         } else if(this.ticksPassed() === 50) {
@@ -395,6 +524,9 @@ const LEVELS={
                     activateMenu: function(){
                         console.log("Activated highscore");
                     }
+                },
+                "wall1":{
+                    ...defaultWall.ai,
                 }
             },
 
@@ -411,6 +543,7 @@ const LEVELS={
                     ...defaultEnemy.params,
                 },
                 "superEnemy": {
+                    ...defaultEnemy.params,
                     dmg: 1,
                     speed: { x: 10, y: 10 },
                     hp: 3,
@@ -427,6 +560,9 @@ const LEVELS={
                 "menuHighscore": {
                     ...defaultMenuEnemy.params,
                     text: "HIGHSCORE",
+                },
+                "wall1":{
+                    ...defaultWall.params,
                 }
             },
 
@@ -436,9 +572,7 @@ const LEVELS={
 
             "design": {
                 "upgrade1": {
-                    width: 20,
-                    height: 60,
-                    sprite: { imgSrc: "images/ships/mainShip.png", width: 71, height: 69, offsetX: -10 },
+                    ...defaultShip.design,
                 },
                 "menuShip": {
                     ...defaultShip.design,
@@ -453,43 +587,44 @@ const LEVELS={
                 },
 
                 "upgrade1": {
-                    tick: function() {
-                        this.invulnerable--;
-                        this.reload--;
-                        if(this.reload < 0) this.reload = 0;
-                        if(this.invulnerable < 0) this.invulnerable = 0;
-                    },
+                    ...defaultShip.ai,
+                    // tick: function() {
+                    //     this.invulnerable--;
+                    //     this.reload--;
+                    //     if(this.reload < 0) this.reload = 0;
+                    //     if(this.invulnerable < 0) this.invulnerable = 0;
+                    // },
 
-                    fire: function() {
-                        if(!this.reload){
-                            let bullet = new Bullet( { 
-                                x: this.x + this.width, 
-                                y: this.y + this.height / 2, 
-                                ...this.bullet,
-                            } );
-                            bullet.y -= bullet.height / 2;
-                            game.objects.push( bullet );
-                            this.reload = this.fireRate;
-                        }
-                    },
+                    // fire: function() {
+                    //     if(!this.reload){
+                    //         let bullet = new Bullet( { 
+                    //             x: this.x + this.width, 
+                    //             y: this.y + this.height / 2, 
+                    //             ...this.bullet,
+                    //         } );
+                    //         bullet.y -= bullet.height / 2;
+                    //         game.objects.push( bullet );
+                    //         this.reload = this.fireRate;
+                    //     }
+                    // },
 
-                    check: function(point){
-                        switch(point.type){
-                            case "E":
-                                this.attack(point);
-                                break;
-                        }
-                    },
+                    // check: function(point){
+                    //     switch(point.type){
+                    //         case "E":
+                    //             this.attack(point);
+                    //             break;
+                    //     }
+                    // },
 
-                    takeDmg: function(dmg){
-                        if(this.invulnerable !== 0) return;
+                    // takeDmg: function(dmg){
+                    //     if(this.invulnerable !== 0) return;
 
-                        this.hp -= dmg;
+                    //     this.hp -= dmg;
                 
-                        if(this.hp > 0){
-                            this.invulnerable = 60;
-                        }
-                    }
+                    //     if(this.hp > 0){
+                    //         this.invulnerable = 60;
+                    //     }
+                    // }
                 },
 
                 "menuShip": {
@@ -566,11 +701,7 @@ const LEVELS={
 
             "params": {
                 "upgrade1":{
-                    dmg: 1,
-                    speed: { x: 10, y: 10 },
-                    hp: 500,
-                    bullet: { design: "shipBullet1" },
-                    fireRate: 8,
+                    ...defaultShip.params,
                 },
                 "menuShip": {
                     ...defaultShip.params
@@ -663,6 +794,9 @@ const LEVELS={
                                 }
                                 this.die();
                                 break;
+                            case 'W':
+                                this.die();
+                                break;
                             }
                     },
                 }
@@ -720,6 +854,24 @@ const LEVELS={
                 },
                 "smallExplosion": {
                     ...defaultExplosion.params,
+                }
+            }
+        },
+
+        "upgrades": {
+            "design": {
+                "upgrade1":{
+                    ...defaultUpgrade.design,
+                }
+            },
+            "ai": {
+                "upgrade1":{
+                    ...defaultUpgrade.ai,
+                }
+            },
+            "params": {
+                "upgrade1":{
+                    ...defaultUpgrade.params,
                 }
             }
         }

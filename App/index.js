@@ -9,18 +9,6 @@ class Game {
 
         this.tickIntervalId = -1;
 
-        document.addEventListener('keydown', e => {
-            this.keysDown[e.key] = true;
-        });
-
-        document.addEventListener('keyup', e => {
-            this.keysDown[e.key] = false;
-        });
-
-        document.addEventListener('keypress', e => {
-            if(e.key === 'p') this.togglePause();
-		});
-
 		this.canvas.width = w * scale;
 		this.canvas.height = h * scale;
 		this.canvas.style.width = w;
@@ -35,16 +23,6 @@ class Game {
 
 		ctx.globalAlpha = 1;
 		ctx.lineWidth = 2;
-
-		//this.level = LEVELS["level1"];
-		this.level = LEVELS["menu"];
-
-		// this.currentBackgroundID = 0;
-		// this.currentBackground = { ...LEVELS.backgrounds[ this.level.background[0] ], offset: 0 };
-		// this.nextBackground = { ...LEVELS.backgrounds[ this.level.background[1] ], offset: 0 };
-		// this.levelLength = this.level.background.reduce((prev, curr) => {
-		// 	return prev + LEVELS.backgrounds[curr].width;
-		// }, 0);
     }
 
     checkObjectsFor(point){
@@ -74,7 +52,9 @@ class Game {
     }
     checkDeath(point, i){
         if(point.isDead()){
-
+			if(point.haveUpgrade){
+				this.objects.push( new Upgrade( { x: point.x, y: point.y + point.height / 2, ...point.haveUpgrade } ) )
+			}
 
 			this.objects.splice(i, 1);
 			i--;
@@ -86,9 +66,19 @@ class Game {
 		ctx.globalCompositeOperation = 'source-over';
 		ctx.fillStyle = "#000000";
 		ctx.fillRect(0, 0, w, h);
+		let background = document.createElement("img");
+		background.src = "./images/backgrounds/city1.png";
+		ctx.drawImage(background, 0, 0, w, h);
+		// ctx.drawImage(background, 0 + this.tickCount * this.level.speed, 0, w, h, 0, 0, w, h);
 
 		for(let i = 0; i < this.objects.length; i++){
 			let point = this.objects[i];
+
+			if(point.type == "S" && point.invulnerable > 0){
+				ctx.save();
+
+				ctx.globalAlpha = point.invulnerable % 4 >= 2 ? 0.4 : 0.8;
+			}
 
 			if(point.color){
 				ctx.fillStyle = point.color;
@@ -108,6 +98,8 @@ class Game {
 				this.renderTileSet(point);
 
 			}
+
+			ctx.restore();
 
 			//render hitbox
 			// ctx.strokeStyle = "red";
@@ -138,6 +130,11 @@ class Game {
 			this.genEnemy(this.currentEnemy);
 			this.currentEnemy = this.level.enemies[++this.currentEnemyID];
 		}
+		
+		while( this.currentWall && this.currentWall.tick == this.tickCount){
+			this.genEnemy(this.currentWall);
+			this.currentWall = this.level.walls[++this.currentWallID];
+		}
 
         for(let i = 0; i < this.objects.length; i++){
             this.checkObjectsFor(this.objects[i]);
@@ -148,24 +145,23 @@ class Game {
 
         this.tickCount++;
     }
-    // genRandomEnemy(){
-	// 	const enemyType = Math.random() > 0.5 ? SuperEnemy : Enemy;
-    //     const rndY = Math.floor( Math.random() * this.MAP_HEIGHT );
-    //     const rndYDir = Math.random() >= 0.5 ? 1 : -1;
-	// 	this.objects.push( new enemyType( { 
-	// 		x: this.MAP_WIDTH - 1, 
-	// 		y: rndY, hp: 1, 
-	// 		direction: { x: -1, y: rndYDir }, 
-	// 		speed: 18, 
-	// 		fireRate:36 
-	// 	} ) );
-	// }
-
 	// enemy: from LEVELS
 	genEnemy(enemy){
 		this.objects.push( new Enemy(enemy) );
 	}
     start(){
+
+        document.addEventListener('keydown', e => {
+            this.keysDown[e.key] = true;
+        });
+
+        document.addEventListener('keyup', e => {
+            this.keysDown[e.key] = false;
+        });
+
+        document.addEventListener('keypress', e => {
+            if(e.key === 'p') this.togglePause();
+		});
 
 		this.loadLevel("menu");
 
@@ -184,6 +180,8 @@ class Game {
 
 		this.currentEnemyID = 0;
 		this.currentEnemy = this.level.enemies[this.currentEnemyID];
+		this.currentWallID = 0;
+		this.currentWall = this.level.walls && this.level.walls[this.currentWallID];
 
 		this.objects = [];
 
@@ -278,6 +276,7 @@ class Point {
 			ai = "none",
 			design = "none",
 			params = "none",
+			props
 		} ) {
         this.x = x;
         this.y = y;
@@ -303,6 +302,9 @@ class Point {
 			case 'D':
 				preset = "decorations";
 				break;
+			case 'U':
+				preset = "upgrades";
+				break;
 		}
 
 		let currParams = {
@@ -321,6 +323,10 @@ class Point {
 
 		if(this.y === "center") {
 			this.y = h2 - this.height / 2;
+		}
+
+		for(let key in props){
+			this[key] = props[key];
 		}
 
 		this.init();
@@ -378,7 +384,8 @@ class Ship extends Point {
 		y, 
 		design = "upgrade1",
 		params = design,
-		ai = design
+		ai = design,
+		...props
 	 } ){
 		super( { 
 			x,
@@ -386,7 +393,8 @@ class Ship extends Point {
 			type: "S", 
 			design,
 			params,
-			ai
+			ai,
+			props
 		 } );
 		this.reload = 0;
 		this.invulnerable = 0;
@@ -441,6 +449,7 @@ class Enemy extends Point {
 		params = design,
 		ai = design,
 		haveUpgrade,
+		...props
 	 } ) {
 		super( { 
 			x, 
@@ -448,9 +457,11 @@ class Enemy extends Point {
 			type: "E", 
 			ai,
 			design,
-			params
+			params,
+			props
 		} );
-		this.startTicks = tick;
+		//console.log(this);
+		this.haveUpgrade = haveUpgrade;
 		if(this.sprite) this.sprite.offsetX = this.sprite.offsetX || -(this.sprite.width - this.width) / 2;
 		if(this.sprite) this.sprite.offsetY = this.sprite.offsetY || -(this.sprite.height - this.height) / 2;
     }
@@ -462,7 +473,8 @@ class Bullet extends Point {
 		y,
 		design = "enemyBullet1",
 		ai = design,
-		params = design
+		params = design,
+		...props
 	}) {
 
 		super({
@@ -471,7 +483,8 @@ class Bullet extends Point {
 			type: "B", 
 			ai, 
 			params,
-			design
+			design,
+			props
 		});
 
 	}
@@ -483,7 +496,8 @@ class Decoration extends Point {
 		y,
 		design = "explosion1",
 		ai = design,
-		params = design
+		params = design,
+		...props
 	}) {
 
 		super({
@@ -492,7 +506,31 @@ class Decoration extends Point {
 			type: "D",
 			ai, 
 			params,
-			design
+			design,
+			props
+		});
+
+	}
+}
+
+class Upgrade extends Point {
+	constructor({
+		x,
+		y,
+		design = "upgrade1",
+		ai = design,
+		params = design,
+		...props
+	}) {
+
+		super({
+			x,
+			y,
+			type: "U",
+			ai, 
+			params,
+			design,
+			props
 		});
 
 	}
