@@ -145,7 +145,7 @@ const defaultEnemy = {
     "params": {
         dmg: 1,
         speed: { x: 10, y: 10 },
-        hp: 10,
+        hp: 1,
         bullet: { design: "enemyBullet1" },
         fireRate: 20
     },
