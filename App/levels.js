@@ -1,3 +1,5 @@
+"use strict";
+
 const TICKS_PER_SEC = 30;
 
 const w = 1920;//window.innerWidth;
@@ -400,20 +402,20 @@ const LEVELS={
             "city2",
             "city3",
         ],
-        walls: [
-            { tick: 50, x: w, y: 900, design: "wall1" },
-            { tick: 60, x: w, y: 900, design: "wall1" },
-            { tick: 70, x: w, y: 900, design: "wall1" },
-            { tick: 80, x: w, y: 900, design: "wall1" },
-            { tick: 90, x: w, y: 900, design: "wall1" },
-            { tick: 100, x: w, y: 900, design: "wall1" },
-            { tick: 110, x: w, y: 900, design: "wall1" },
-            { tick: 120, x: w, y: 900, design: "wall1" },
-            { tick: 130, x: w, y: 900, design: "wall1" },
-            { tick: 140, x: w, y: 900, design: "wall1" },
-            { tick: 150, x: w, y: 900, design: "wall1" },
-            { tick: 160, x: w, y: 900, design: "wall1" },
-        ],
+        // walls: [
+        //     { tick: 50, x: w, y: 900, design: "wall1" },
+        //     { tick: 60, x: w, y: 900, design: "wall1" },
+        //     { tick: 70, x: w, y: 900, design: "wall1" },
+        //     { tick: 80, x: w, y: 900, design: "wall1" },
+        //     { tick: 90, x: w, y: 900, design: "wall1" },
+        //     { tick: 100, x: w, y: 900, design: "wall1" },
+        //     { tick: 110, x: w, y: 900, design: "wall1" },
+        //     { tick: 120, x: w, y: 900, design: "wall1" },
+        //     { tick: 130, x: w, y: 900, design: "wall1" },
+        //     { tick: 140, x: w, y: 900, design: "wall1" },
+        //     { tick: 150, x: w, y: 900, design: "wall1" },
+        //     { tick: 160, x: w, y: 900, design: "wall1" },
+        // ],
         speed: 3
     },
 

@@ -1,28 +1,30 @@
 
 
+
 class Game {
     constructor(){
-        this.canvas = document.querySelector("canvas");
+        // this.canvas = document.querySelector("canvas");
 
         this.MAP_WIDTH  = w;
         this.MAP_HEIGHT = h;
 
         this.tickIntervalId = -1;
 
-		this.canvas.width = w * scale;
-		this.canvas.height = h * scale;
-		this.canvas.style.width = w;
-		this.canvas.style.height = h;
+		// this.canvas.width = w * scale;
+		// this.canvas.height = h * scale;
+		// this.canvas.style.width = w;
+		// this.canvas.style.height = h;
 
-		this.ctx = this.canvas.getContext('2d');
-		let ctx = this.ctx;
-		ctx.scale(scale, scale);
 
-		ctx.fillStyle = '#000000';
-		ctx.fillRect( 0, 0, w, h );
+		// this.ctx = this.canvas.getContext('2d');
+		// let ctx = this.ctx;
+		// ctx.scale(scale, scale);
 
-		ctx.globalAlpha = 1;
-		ctx.lineWidth = 2;
+		// ctx.fillStyle = '#000000';
+		// ctx.fillRect( 0, 0, w, h );
+
+		// ctx.globalAlpha = 1;
+		// ctx.lineWidth = 2;
     }
 
     checkObjectsFor(point){
@@ -61,56 +63,89 @@ class Game {
 		}
     }
     render() {
-		let ctx = this.ctx;
+		// let background = new PIXI.Sprite(
+		// 	app.loader.resources["./images/backgrounds/city1.png"].texture
+		// );
+		// let background = new PIXI.Sprite.from("./images/backgrounds/city1.png");
+		// background.x = -this.tickCount * 4;
+		// background.width = w;
+		// background.height = h;
+		// app.stage.addChild(background);
 
-		ctx.globalCompositeOperation = 'source-over';
-		ctx.fillStyle = "#000000";
-		ctx.fillRect(0, 0, w, h);
-		let background = document.createElement("img");
-		background.src = "./images/backgrounds/city1.png";
-		ctx.drawImage(background, 0, 0, w, h);
-		// ctx.drawImage(background, 0 + this.tickCount * this.level.speed, 0, w, h, 0, 0, w, h);
+		// for(let i = 0; i < this.objects.length; i++){
+		// 	let point = this.objects[i];
 
-		for(let i = 0; i < this.objects.length; i++){
-			let point = this.objects[i];
+		// 	if(point.sprite && point.sprite.imgSrc){
+		// 		this.renderSprite(point);
 
-			if(point.type == "S" && point.invulnerable > 0){
-				ctx.save();
+				
 
-				ctx.globalAlpha = point.invulnerable % 4 >= 2 ? 0.4 : 0.8;
-			}
+		// 	}
 
-			if(point.color){
-				ctx.fillStyle = point.color;
-				ctx.fillRect(point.x, point.y, point.width, point.height);
-			}
+		// }
 
-			if(point.text){
 
-				this.renderText(point);
+		app.render();
 
-			} else if(point.sprite && point.sprite.imgSrc){
+		//app.stop();
 
-				this.renderSprite(point);
+		// app.stage.removeChildren();
 
-			} else if(point.tileSet) {
+		// let ctx = this.ctx;
 
-				this.renderTileSet(point);
+		// let background = PIXI.Sprite.from("./images/backgrounds/city1.png");
+		// this.app.stage.addChild(background);
 
-			}
+		// ctx.globalCompositeOperation = 'source-over';
+		// ctx.fillStyle = "#000000";
+		// ctx.fillRect(0, 0, w, h);
+		// let background = document.createElement("img");
+		// background.src = "./images/backgrounds/city1.png";
+		// ctx.drawImage(background, 0, 0, w, h);
 
-			ctx.restore();
+		// for(let i = 0; i < this.objects.length; i++){
+		// 	let point = this.objects[i];
 
-			//render hitbox
-			// ctx.strokeStyle = "red";
-			// ctx.strokeRect(point.x, point.y, point.width, point.height);
+		// 	if(point.type == "S" && point.invulnerable > 0){
+		// 		ctx.save();
 
-		}
+		// 		ctx.globalAlpha = point.invulnerable % 4 >= 2 ? 0.4 : 0.8;
+		// 	}
 
-		//render hp
-		if(this.ship){
-			this.renderShipHp();
-		}
+		// 	if(point.color){
+		// 		ctx.fillStyle = point.color;
+		// 		ctx.fillRect(point.x, point.y, point.width, point.height);
+		// 	}
+
+		// 	if(point.text){
+
+		// 		this.renderText(point);
+
+		// 	} else if(point.sprite && point.sprite.imgSrc){
+
+		// 		this.renderSprite(point);
+
+		// 	} else if(point.tileSet) {
+
+		// 		this.renderTileSet(point);
+
+		// 	}
+
+		// 	ctx.restore();
+
+		// 	//render hitbox
+		// 	// ctx.strokeStyle = "red";
+		// 	// ctx.strokeRect(point.x, point.y, point.width, point.height);
+
+		// }
+
+		// //render hp
+		// if(this.ship){
+		// 	this.renderShipHp();
+		// }
+
+
+
     }
     handleKeys(){
         for(let i = 0; i < this.objects.length; i++){
@@ -145,7 +180,6 @@ class Game {
 
         this.tickCount++;
     }
-	// enemy: from LEVELS
 	genEnemy(enemy){
 		this.objects.push( new Enemy(enemy) );
 	}
@@ -206,17 +240,27 @@ class Game {
         }
 	}
 	renderSprite(point){
-		let ctx = this.ctx;
-		let img = document.createElement("img");
-		img.src = point.sprite.imgSrc;
-		let spriteX = point.x + (point.sprite.offsetX || 0);
-		let spriteY = point.y + (point.sprite.offsetY || 0);
-		ctx.drawImage(
-			img,
-			spriteX,
-			spriteY,
-			point.sprite.width,
-			point.sprite.height);
+		// let ctx = this.ctx;
+		// let img = document.createElement("img");
+		// img.src = point.sprite.imgSrc;
+		// let spriteX = point.x + (point.sprite.offsetX || 0);
+		// let spriteY = point.y + (point.sprite.offsetY || 0);
+		// ctx.drawImage(
+		// 	img,
+		// 	spriteX,
+		// 	spriteY,
+		// 	point.sprite.width,
+		// 	point.sprite.height);
+
+		let sprite = new PIXI.Sprite.from(point.sprite.imgSrc);
+
+		sprite.x = point.x + (point.sprite.offsetX || 0);
+		sprite.y = point.y + (point.sprite.offsetY || 0);
+		sprite.width = point.sprite.width;
+		sprite.height = point.sprite.height;
+
+		app.stage.addChild(sprite);
+
 	}
 	renderText(point){
 		let ctx = this.ctx;
@@ -536,5 +580,21 @@ class Upgrade extends Point {
 	}
 }
 
+
+
+let app = new PIXI.Application({
+	width: 1920, 
+	height: 1080,
+});
+document.body.appendChild(app.view);
+
 let game = new Game;
 game.start();
+
+// app.loader.add( [
+// 		"./images/backgrounds/city1.png",
+// 		"./"
+// 			] )
+// .load( () => {
+// 	game.start();
+// } );
