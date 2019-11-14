@@ -66,35 +66,54 @@ class Game {
 		// let background = new PIXI.Sprite(
 		// 	app.loader.resources["./images/backgrounds/city1.png"].texture
 		// );
-		// let background = new PIXI.Sprite.from("./images/backgrounds/city1.png");
-		// background.x = -this.tickCount * 4;
-		// background.width = w;
-		// background.height = h;
-		// app.stage.addChild(background);
+		let background = new PIXI.Sprite.from("./images/backgrounds/city1.png");
+		background.x = -this.tickCount * 4;
+		background.width = w;
+		background.height = h;
+		app.stage.addChild(background);
 
-		// for(let i = 0; i < this.objects.length; i++){
-		// 	let point = this.objects[i];
+		for(let i = 0; i < this.objects.length; i++){
+			let point = this.objects[i];
+			let alpha = 1;
 
-		// 	if(point.sprite && point.sprite.imgSrc){
-		// 		this.renderSprite(point);
+			if(point.type == "S" && point.invulnerable > 0){
+				alpha = point.invulnerable % 4 >= 2 ? 0.4 : 0.8;
+			}
 
-				
+			if(point.color){
+				let g = new PIXI.Graphics;
+				g.beginFill(point.color.substr(1));
+				g.drawRect(point.x, point.y, point.width, point.height);
+				g.endFill();
+				app.stage.addChild(g);
+			}
 
-		// 	}
+			if(point.text){
 
-		// }
+				this.renderText(point);
+
+			} else if(point.sprite && point.sprite.imgSrc){
+
+				this.renderSprite(point, alpha);
+
+			} else if(point.tileSet) {
+
+				// this.renderTileSet(point);
+
+			}
+
+		}
+
+
 
 
 		app.render();
 
-		//app.stop();
+		app.stop();
 
-		// app.stage.removeChildren();
+		app.stage.removeChildren();
 
 		// let ctx = this.ctx;
-
-		// let background = PIXI.Sprite.from("./images/backgrounds/city1.png");
-		// this.app.stage.addChild(background);
 
 		// ctx.globalCompositeOperation = 'source-over';
 		// ctx.fillStyle = "#000000";
@@ -181,7 +200,23 @@ class Game {
         this.tickCount++;
     }
 	genEnemy(enemy){
-		this.objects.push( new Enemy(enemy) );
+		let e = new Enemy(enemy);
+		this.objects.push( e );
+		// if(e.sprite && e.sprite.imgSrc){
+		// 	let sprite = new PIXI.Sprite.from(e.sprite.imgSrc);
+		// 	app.ticker.add(function() {
+		// 		if(e.isDead()){
+		// 			sprite.destroy();
+		// 			this.destroy();
+		// 			return;
+		// 		}
+		// 		sprite.x = e.x;
+		// 		sprite.y = e.y;
+		// 		sprite.height = e.sprite.height;
+		// 		sprite.width = e.sprite.width;
+		// 	});
+		// 	app.stage.addChild(sprite);
+		// }
 	}
     start(){
 
@@ -239,7 +274,7 @@ class Game {
             this.tickIntervalId = -1;
         }
 	}
-	renderSprite(point){
+	renderSprite(point, alpha){
 		// let ctx = this.ctx;
 		// let img = document.createElement("img");
 		// img.src = point.sprite.imgSrc;
@@ -254,6 +289,10 @@ class Game {
 
 		let sprite = new PIXI.Sprite.from(point.sprite.imgSrc);
 
+		if(alpha){
+			sprite.alpha = alpha;
+		}
+
 		sprite.x = point.x + (point.sprite.offsetX || 0);
 		sprite.y = point.y + (point.sprite.offsetY || 0);
 		sprite.width = point.sprite.width;
@@ -263,17 +302,23 @@ class Game {
 
 	}
 	renderText(point){
-		let ctx = this.ctx;
+		// let ctx = this.ctx;
 
-		ctx.fillStyle = point.textColor;
-		ctx.font = point.font;
+		// ctx.fillStyle = point.textColor;
+		// ctx.font = point.font;
 
-		let x = Math.abs( (ctx.measureText(point.text).width - point.width) ) / 2 + point.x;
+		// let x = Math.abs( (ctx.measureText(point.text).width - point.width) ) / 2 + point.x;
 
-		let fontHeight = parseInt(ctx.font.match(/\d+/), 10)
-		let y = point.y + point.height - Math.abs( (fontHeight - point.height) ) / 2;
+		// let fontHeight = parseInt(ctx.font.match(/\d+/), 10)
+		// let y = point.y + point.height - Math.abs( (fontHeight - point.height) ) / 2;
 
-		ctx.fillText(point.text, x, y);
+		// ctx.fillText(point.text, x, y);
+		let font = point.font.split(" ");
+
+		let text = new PIXI.Text(point.text, { fill: point.textColor, fontFamily: font[1], fontSize: font[0] });
+		text.x = Math.abs( (text.width - point.width) ) / 2 + point.x;
+		text.y = Math.abs( (text.height - point.height) ) / 2 + point.y;
+		app.stage.addChild(text);
 	}
 	renderShipHp(){
 		let ctx = this.ctx;
@@ -285,29 +330,51 @@ class Game {
 		this.keysDown = {};
 	}
 	renderTileSet(point){
-		let ctx = this.ctx;
-		let img = document.createElement("img");
-		img.src = point.tileSet.src;
+		// let ctx = this.ctx;
+		// let img = document.createElement("img");
+		// img.src = point.tileSet.src;
+
+		// let tileSet = point.tileSet;
+		// let animationOptions = point.animationOptions;
+
+		// let tileX = point.x + (animationOptions.offsetX || 0);
+		// let tileY = point.y + (animationOptions.offsetY || 0);
+
+		// let width = animationOptions.width || tileSet.width;
+		// let height = animationOptions.height || tileSet.height;
+
+		// ctx.drawImage(
+		// 	img,
+		// 	...tileSet.tiles[point.animationStep],
+		// 	tileSet.width,
+		// 	tileSet.height,
+		// 	tileX,
+		// 	tileY,
+		// 	width,
+		// 	height
+		// );
 
 		let tileSet = point.tileSet;
 		let animationOptions = point.animationOptions;
 
-		let tileX = point.x + (animationOptions.offsetX || 0);
-		let tileY = point.y + (animationOptions.offsetY || 0);
+		let texture = new PIXI.Texture.from(point.tileSet.src);
 
-		let width = animationOptions.width || tileSet.width;
-		let height = animationOptions.height || tileSet.height;
-
-		ctx.drawImage(
-			img,
-			...tileSet.tiles[point.animationStep],
-			tileSet.width,
-			tileSet.height,
-			tileX,
-			tileY,
-			width,
-			height
+		texture.frame = new PIXI.Rectangle(
+			...tileSet.tiles[point.animationStep], 
+			tileSet.width, 
+			tileSet.height
 		);
+
+		texture.updateUvs();
+
+		let sprite = new PIXI.Sprite(texture);
+
+		sprite.x = point.x + (animationOptions.offsetX || 0);
+		sprite.y = point.y + (animationOptions.offsetY || 0);
+		sprite.width = animationOptions.width || tileSet.width;
+		sprite.height = animationOptions.height || tileSet.height;
+
+		app.stage.addChild(sprite);
 	}
 }
 
