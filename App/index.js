@@ -1,30 +1,43 @@
 
+function tick(){
+	this.handleKeys();
+	
+	while( this.currentEnemy && this.currentEnemy.tick == this.tickCount){
+		this.genEnemy(this.currentEnemy);
+		this.currentEnemy = this.level.enemies[++this.currentEnemyID];
+	}
+	
+	while( this.currentWall && this.currentWall.tick == this.tickCount){
+		this.genEnemy(this.currentWall);
+		this.currentWall = this.level.walls[++this.currentWallID];
+	}
 
+	for(let i = 0; i < this.objects.length; i++){
+		this.checkObjectsFor(this.objects[i]);
+		this.objects[i].tick();
+		this.checkObjectsFor(this.objects[i]);
+	}
+	this.checkDeadObjects();
+
+	this.tickCount++;
+}
 
 class Game {
     constructor(){
-        // this.canvas = document.querySelector("canvas");
+		this.canvas = document.querySelector("canvas");
 
         this.MAP_WIDTH  = w;
         this.MAP_HEIGHT = h;
 
-        this.tickIntervalId = -1;
+		this.tickIntervalId = -1;
+		
+
+		this.tick = tick;
 
 		// this.canvas.width = w * scale;
 		// this.canvas.height = h * scale;
 		// this.canvas.style.width = w;
 		// this.canvas.style.height = h;
-
-
-		// this.ctx = this.canvas.getContext('2d');
-		// let ctx = this.ctx;
-		// ctx.scale(scale, scale);
-
-		// ctx.fillStyle = '#000000';
-		// ctx.fillRect( 0, 0, w, h );
-
-		// ctx.globalAlpha = 1;
-		// ctx.lineWidth = 2;
     }
 
     checkObjectsFor(point){
@@ -82,7 +95,7 @@ class Game {
 
 			if(point.color){
 				let g = new PIXI.Graphics;
-				g.beginFill(point.color.substr(1));
+				g.beginFill(point.color);
 				g.drawRect(point.x, point.y, point.width, point.height);
 				g.endFill();
 				app.stage.addChild(g);
@@ -98,7 +111,7 @@ class Game {
 
 			} else if(point.tileSet) {
 
-				// this.renderTileSet(point);
+				this.renderTileSet(point);
 
 			}
 
@@ -113,45 +126,6 @@ class Game {
 
 		app.stage.removeChildren();
 
-		// let ctx = this.ctx;
-
-		// ctx.globalCompositeOperation = 'source-over';
-		// ctx.fillStyle = "#000000";
-		// ctx.fillRect(0, 0, w, h);
-		// let background = document.createElement("img");
-		// background.src = "./images/backgrounds/city1.png";
-		// ctx.drawImage(background, 0, 0, w, h);
-
-		// for(let i = 0; i < this.objects.length; i++){
-		// 	let point = this.objects[i];
-
-		// 	if(point.type == "S" && point.invulnerable > 0){
-		// 		ctx.save();
-
-		// 		ctx.globalAlpha = point.invulnerable % 4 >= 2 ? 0.4 : 0.8;
-		// 	}
-
-		// 	if(point.color){
-		// 		ctx.fillStyle = point.color;
-		// 		ctx.fillRect(point.x, point.y, point.width, point.height);
-		// 	}
-
-		// 	if(point.text){
-
-		// 		this.renderText(point);
-
-		// 	} else if(point.sprite && point.sprite.imgSrc){
-
-		// 		this.renderSprite(point);
-
-		// 	} else if(point.tileSet) {
-
-		// 		this.renderTileSet(point);
-
-		// 	}
-
-		// 	ctx.restore();
-
 		// 	//render hitbox
 		// 	// ctx.strokeStyle = "red";
 		// 	// ctx.strokeRect(point.x, point.y, point.width, point.height);
@@ -162,9 +136,6 @@ class Game {
 		// if(this.ship){
 		// 	this.renderShipHp();
 		// }
-
-
-
     }
     handleKeys(){
         for(let i = 0; i < this.objects.length; i++){
@@ -177,46 +148,9 @@ class Game {
 
         }
     }
-    tick(){
-        this.handleKeys();
-		
-		while( this.currentEnemy && this.currentEnemy.tick == this.tickCount){
-			this.genEnemy(this.currentEnemy);
-			this.currentEnemy = this.level.enemies[++this.currentEnemyID];
-		}
-		
-		while( this.currentWall && this.currentWall.tick == this.tickCount){
-			this.genEnemy(this.currentWall);
-			this.currentWall = this.level.walls[++this.currentWallID];
-		}
-
-        for(let i = 0; i < this.objects.length; i++){
-            this.checkObjectsFor(this.objects[i]);
-            this.objects[i].tick();
-            this.checkObjectsFor(this.objects[i]);
-        }
-        this.checkDeadObjects();
-
-        this.tickCount++;
-    }
 	genEnemy(enemy){
 		let e = new Enemy(enemy);
 		this.objects.push( e );
-		// if(e.sprite && e.sprite.imgSrc){
-		// 	let sprite = new PIXI.Sprite.from(e.sprite.imgSrc);
-		// 	app.ticker.add(function() {
-		// 		if(e.isDead()){
-		// 			sprite.destroy();
-		// 			this.destroy();
-		// 			return;
-		// 		}
-		// 		sprite.x = e.x;
-		// 		sprite.y = e.y;
-		// 		sprite.height = e.sprite.height;
-		// 		sprite.width = e.sprite.width;
-		// 	});
-		// 	app.stage.addChild(sprite);
-		// }
 	}
     start(){
 
@@ -239,25 +173,39 @@ class Game {
         this.setGameInterval();
 
 	}
-	loadLevel(level){
-
-		this.level = LEVELS[level];
-
+	clearLevel(){
         this.tickCount = 0;
 
 		this.keysDown = {};
 
-		this.currentEnemyID = 0;
-		this.currentEnemy = this.level.enemies[this.currentEnemyID];
-		this.currentWallID = 0;
-		this.currentWall = this.level.walls && this.level.walls[this.currentWallID];
+		if(this.level.enemies.length > 0){	
+			this.currentEnemyID = 0;
+			this.currentEnemy = this.level.enemies[this.currentEnemyID];
+			this.currentWallID = 0;
+			this.currentWall = this.level.walls && this.level.walls[this.currentWallID];
+		}
 
 		this.objects = [];
+	}
+	loadLevel(level){
+		this.level = LEVELS[level];
+		
+		if (this.level.init){
+			this.init = this.level.init;
+			this.init();
+		}
+
+        this.clearLevel();
 
 		if(this.level.ship){
 			this.ship = new Ship(this.level.ship);
 		
 			this.objects.push(this.ship);
+		}
+		
+		while( this.currentEnemy && this.currentEnemy.tick == this.tickCount){
+			this.genEnemy(this.currentEnemy);
+			this.currentEnemy = this.level.enemies[++this.currentEnemyID];
 		}
 	}
     setGameInterval(){
@@ -275,18 +223,6 @@ class Game {
         }
 	}
 	renderSprite(point, alpha){
-		// let ctx = this.ctx;
-		// let img = document.createElement("img");
-		// img.src = point.sprite.imgSrc;
-		// let spriteX = point.x + (point.sprite.offsetX || 0);
-		// let spriteY = point.y + (point.sprite.offsetY || 0);
-		// ctx.drawImage(
-		// 	img,
-		// 	spriteX,
-		// 	spriteY,
-		// 	point.sprite.width,
-		// 	point.sprite.height);
-
 		let sprite = new PIXI.Sprite.from(point.sprite.imgSrc);
 
 		if(alpha){
@@ -302,17 +238,6 @@ class Game {
 
 	}
 	renderText(point){
-		// let ctx = this.ctx;
-
-		// ctx.fillStyle = point.textColor;
-		// ctx.font = point.font;
-
-		// let x = Math.abs( (ctx.measureText(point.text).width - point.width) ) / 2 + point.x;
-
-		// let fontHeight = parseInt(ctx.font.match(/\d+/), 10)
-		// let y = point.y + point.height - Math.abs( (fontHeight - point.height) ) / 2;
-
-		// ctx.fillText(point.text, x, y);
 		let font = point.font.split(" ");
 
 		let text = new PIXI.Text(point.text, { fill: point.textColor, fontFamily: font[1], fontSize: font[0] });
@@ -357,24 +282,33 @@ class Game {
 		let tileSet = point.tileSet;
 		let animationOptions = point.animationOptions;
 
-		let texture = new PIXI.Texture.from(point.tileSet.src);
+		// let texture = new PIXI.Texture.from(point.tileSet.src);
 
-		texture.frame = new PIXI.Rectangle(
-			...tileSet.tiles[point.animationStep], 
-			tileSet.width, 
-			tileSet.height
-		);
+		// texture.frame = new PIXI.Rectangle(
+		// 	...tileSet.tiles[point.animationStep], 
+		// 	tileSet.width - 1, 
+		// 	tileSet.height - 1 
+		// );
 
-		texture.updateUvs();
+		// texture.updateUvs();
 
-		let sprite = new PIXI.Sprite(texture);
+		// let sprite = new PIXI.Sprite(texture);
 
-		sprite.x = point.x + (animationOptions.offsetX || 0);
-		sprite.y = point.y + (animationOptions.offsetY || 0);
-		sprite.width = animationOptions.width || tileSet.width;
-		sprite.height = animationOptions.height || tileSet.height;
+		// let sprite = new PIXI.Sprite.from(point.tileSet.src);
+		// sprite.texture.frame = new PIXI.Rectangle(
+		// 	...tileSet.tiles[point.animationStep], 
+		// 	tileSet.width - 1, 
+		// 	tileSet.height - 1 
+		// );
 
-		app.stage.addChild(sprite);
+		// sprite.texture.updateUvs();
+
+		// sprite.x = point.x + (animationOptions.offsetX || 0);
+		// sprite.y = point.y + (animationOptions.offsetY || 0);
+		// sprite.width = animationOptions.width || tileSet.width;
+		// sprite.height = animationOptions.height || tileSet.height;
+
+		// app.stage.addChild(sprite);
 	}
 }
 
@@ -390,7 +324,7 @@ class Point {
 			props
 		} ) {
         this.x = x;
-        this.y = y;
+		this.y = y;
         this.type = type;
         this.direction = direction;
         this.startTicks = (game && game.tickCount) || 0;
@@ -418,11 +352,12 @@ class Point {
 				break;
 		}
 
-		let currParams = {
+		let currParams = JSON.parse(JSON.stringify({
 			...LEVELS.presets[preset].params[params],
 			...LEVELS.presets[preset].design[design],
-			...LEVELS.presets[preset].ai[ai]
-		}
+		}));
+
+		currParams = { ...currParams, ...LEVELS.presets[preset].ai[ai] }
 
 		for(let param in currParams){
 			this[param] = currParams[param];
@@ -439,6 +374,8 @@ class Point {
 		for(let key in props){
 			this[key] = props[key];
 		}
+
+		if(this.hp) this.maxHp = hp;
 
 		this.init();
     }
@@ -571,7 +508,6 @@ class Enemy extends Point {
 			params,
 			props
 		} );
-		//console.log(this);
 		this.haveUpgrade = haveUpgrade;
 		if(this.sprite) this.sprite.offsetX = this.sprite.offsetX || -(this.sprite.width - this.width) / 2;
 		if(this.sprite) this.sprite.offsetY = this.sprite.offsetY || -(this.sprite.height - this.height) / 2;

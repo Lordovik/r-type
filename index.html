@@ -7,6 +7,38 @@
 			position: fixed;
 		}
 
+		#settings{
+			position: fixed;
+			left: 1940px;
+			width: 150px;
+		}
+
+		#settings > div > input {
+			display: block;
+		}
+
+		.x, .y{
+			width: 25px;
+		}
+
+		#slider{
+			position: fixed;
+			top: 1300px;
+			left: 0;
+		}
+
+		#directions{
+			position: fixed;
+			top: 1300px;
+			left: 0;
+		}
+
+		#picked-point{
+			width: 150px;
+			height: 150px;
+			border: 1px solid red;
+		}
+
 	</style>
 </head>
 <body style="border: 0px; padding: 0px; margin: 0px;">
@@ -14,5 +46,35 @@
 	<!-- <canvas id="canvas"></canvas> -->
 	<script src="App/levels.js"></script>
 	<script type="text/javascript" src="App/index.js"></script>
+	<div id="settings">
+		<div id="add-enemy">
+			<p>enemy</p>
+			<span>x:</span><input type="text" class="x">
+			<span>y:</span><input type="text" class="y">
+			<span>design:</span><input type="text" class="design">
+			<span>ai:</span><input type="text" class="ai">
+			<span>param:</span><input type="text" class="param">
+			<button>add</button>
+		</div>
+		<div id="add-wall">
+			<p>wall</p>
+			<span>x:</span><input type="text" class="x">
+			<span>y:</span><input type="text" class="y">
+			<span>design:</span><input type="text" class="design">
+			<span>ai:</span><input type="text" class="ai">
+			<span>param:</span><input type="text" class="param">
+			<button>add</button>
+		</div>
+		<div id="picked-point">
+			<p class="design">Design: <span></span></p>
+			<p class="ai">Ai: <span></span></p>
+			<p class="params">Params: <span></span></p>
+		</div>
+		<div id="directions">
+			<button class="minus">minus</button>
+			<button class="plus">plus</button>
+		</div>
+		<input type="range" id="slider">
+	</div>
 </body>
 </html>
