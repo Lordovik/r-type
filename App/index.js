@@ -375,8 +375,6 @@ class Point {
 			this[key] = props[key];
 		}
 
-		if(this.hp) this.maxHp = hp;
-
 		this.init();
     }
 
@@ -489,16 +487,17 @@ class Ship extends Point {
 }
 
 class Enemy extends Point {
-	constructor( {
-		tick,
-		x,
-		y,
-		design = "enemy1",
-		params = design,
-		ai = design,
-		haveUpgrade,
-		...props
-	 } ) {
+	constructor( constructor ) {
+		({
+			tick,
+			x,
+			y,
+			design = "enemy1",
+			params = design,
+			ai = design,
+			haveUpgrade,
+			...props
+		} = constructor);
 		super( { 
 			x, 
 			y, 
@@ -508,6 +507,7 @@ class Enemy extends Point {
 			params,
 			props
 		} );
+		this.origin = constructor;
 		this.haveUpgrade = haveUpgrade;
 		if(this.sprite) this.sprite.offsetX = this.sprite.offsetX || -(this.sprite.width - this.width) / 2;
 		if(this.sprite) this.sprite.offsetY = this.sprite.offsetY || -(this.sprite.height - this.height) / 2;
