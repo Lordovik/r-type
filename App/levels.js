@@ -144,10 +144,10 @@ const defaultEnemy = {
     },
     "params": {
         dmg: 1,
-        speed: { x: 10, y: 10 },
+        speed: { x: 10, y: 5 },
         hp: 1,
         bullet: { design: "enemyBullet1" },
-        fireRate: 20
+        fireRate: 50
     },
 }
 
@@ -249,7 +249,7 @@ const defaultShip = {
         speed: { x: 15, y: 20 },
         hp: 500,
         bullet: { design: "shipBullet1" },
-        fireRate: 3,
+        fireRate: 10,
     },
 }
 
@@ -352,11 +352,23 @@ const LEVELS={
             { tick: 1, x: 1500,y: 100, },
         ],
         tick: function(){
-
+            for(let key in this.keysDown){
+                if(!this.keysDown[key]) continue;
+                switch(key){
+                    case 'ArrowRight':
+                        slider.value++;
+                        this.changeTick(slider.value);
+                        break;
+                    case 'ArrowLeft':
+                        slider.value--;
+                        this.changeTick(slider.value);
+                        break;
+                }
+            }
         },
         init: function(){
             
-            let levelLength = 600;
+            let levelLength = 1600;
 
             this.tickCount = 0;
     
@@ -364,15 +376,13 @@ const LEVELS={
 
             this.objects = [];
 
-            this.level.enemies = LEVELS["level1"].enemies;
+            let currLevel = "custom";
 
-            this.level.walls = LEVELS["level1"].walls;
+            this.level.enemies = LEVELS[currLevel].enemies;
 
-            this.level.speed = LEVELS["level1"].speed;
+            this.level.walls = LEVELS[currLevel].walls;
 
-            if(this.level.tick){
-                this.tick = this.level.tick;
-            }
+            this.level.speed = LEVELS[currLevel].speed;
 
             let slider = document.querySelector("#slider");
             slider.style.top = h + 30 + 'px';
@@ -381,13 +391,11 @@ const LEVELS={
             slider.min = 0;
             slider.value = 0;
 
-            let directions = document.querySelector("#directions");
-            directions.style.top = h + 60 + 'px';
-            directions.style.width = w + "px";
-
-            slider.addEventListener("change", e => {
+            const changeSlider = () => {
                 this.changeTick(slider.value);
-            });
+            }
+
+            slider.addEventListener("change", changeSlider);
 
             this.changeTick = (tickCount) => {
 
@@ -399,12 +407,15 @@ const LEVELS={
                 }
             }
 
-            document.addEventListener("click", (e) => {
+            const pickEnemy = (e) => {
+                if(e.target != this.canvas) return;
+
                 let x = e.layerX;
                 let y = e.layerY;
 
                 for(let i = 0; i < this.objects.length; i++){
                     let curr = this.objects[i];
+                    if(!(curr instanceof Enemy)) continue;
 
                     let width = curr.sprite.width || curr.width;
                     let height = curr.sprite.height || curr.height;
@@ -414,44 +425,50 @@ const LEVELS={
                             continue;
                     }
 
-                    let designSpan = document.querySelector("#picked-point>.design>span");
-                    designSpan.innerHTML = curr.design;
-                    let aiSpan = document.querySelector("#picked-point>.ai>span");
-                    aiSpan.innerHTML = curr.ai;
-                    let paramsSpan = document.querySelector("#picked-point>.params>span");
-                    paramsSpan.innerHTML = curr.params;
+                    let xInput = document.querySelector("#picked-point>.x");
+                    xInput.value = curr.origin.x;
+                    let yInput = document.querySelector("#picked-point>.y");
+                    yInput.value = curr.origin.y;
+                    let designInput = document.querySelector("#picked-point>.design");
+                    designInput.value = curr.origin.design || curr.design;
+                    let aiInput = document.querySelector("#picked-point>.ai");
+                    aiInput.value = curr.origin.ai || curr.ai;
+                    let paramsInput = document.querySelector("#picked-point>.params");
+                    paramsInput.value = curr.origin.params || curr.params;
 
-                    
+                    this.pickedOrigin = curr.origin;
 
                     return;
                 }
-            })
+            }
+            document.addEventListener("click", pickEnemy);
 
+            // add enemy
             let onAddClick = (selector, addFunc) => {
                 return function(e){
                     let x = document.querySelector(selector + ">.x").value;
                     let y = document.querySelector(selector + ">.y").value;
                     let design = document.querySelector(selector + ">.design").value;
                     let ai = document.querySelector(selector + ">.ai").value;
-                    let param = document.querySelector(selector + ">.param").value;
+                    let params = document.querySelector(selector + ">.params").value;
 
                     let enemy = { tick: this.tickCount, x: +x, y: +y, };
                     if(design) enemy.design = design;
                     if(ai) enemy.ai = ai;
-                    if(param) enemy.param = param;
+                    if(params) enemy.params = params;
                     addFunc(enemy);
                     this.changeTick(slider.value);
                 }.bind(this);
             }
 
-            this.addEnemy = (enemy) => {
+            let addEnemy = (enemy) => {
                 this.level.enemies.push(enemy);
                 this.level.enemies.sort((a, b) => {
                     return a.tick -  b.tick;
                 });
             }
 
-            this.addWall = (wall) => {
+            let addWall = (wall) => {
                 if(!wall.design) wall.design = "wall1";
                 this.level.walls.push(wall);
                 this.level.walls.sort((a, b) => {
@@ -460,10 +477,27 @@ const LEVELS={
             }
 
             let addEnemyButton = document.querySelector("#add-enemy>button");
-            addEnemyButton.onclick = onAddClick("#add-enemy", this.addEnemy);
+            addEnemyButton.onclick = onAddClick("#add-enemy", addEnemy);
 
             let addWallButton = document.querySelector("#add-wall>button");
-            addWallButton.onclick = onAddClick("#add-wall", this.addWall);
+            addWallButton.onclick = onAddClick("#add-wall", addWall);
+
+            let changeEnemyButton = document.querySelector("#picked-point>#change");
+            changeEnemyButton.onclick = (e) => {
+                this.pickedOrigin.x = +document.querySelector("#picked-point>.x").value;
+                this.pickedOrigin.y = +document.querySelector("#picked-point>.y").value;
+                this.pickedOrigin.design = document.querySelector("#picked-point>.design").value;
+                this.pickedOrigin.ai = document.querySelector("#picked-point>.ai").value;
+                this.pickedOrigin.params = document.querySelector("#picked-point>.params").value;
+            }
+
+            let deleteEnemyButton = document.querySelector("#picked-point>#delete");
+            deleteEnemyButton.onclick = (e) => {
+                for(let i = 0; i < this.level.enemies.length; i++){
+                    if(this.level.enemies[i] !== this.pickedOrigin) continue;
+                    this.level.enemies.splice(i, 1);
+                }
+            }
 
             let plusButton = document.querySelector(".plus");
             plusButton.onclick = (e) => {
@@ -477,9 +511,33 @@ const LEVELS={
                 this.changeTick(slider.value);
             }
 
+            let saveButton = document.querySelector("#save");
+            saveButton.onclick = (e) => {
+                console.log(JSON.stringify(this.level));
+            }
+
+            let exitButton = document.querySelector("#exit");
+            exitButton.onclick = (e) => {
+                slider.removeEventListener("change", changeSlider);
+                document.removeEventListener("click", pickEnemy);
+                addEnemyButton.onclick = null;
+                addWallButton.onclick = null;
+                changeEnemyButton.onclick = null;
+                deleteEnemyButton.onclick = null;
+                plusButton.onclick = null;
+                minusButton.onclick = null;
+                saveButton.onclick = null;
+                exitButton.onclick = null;
+
+                this.loadLevel("menu");
+            }
+
             this.changeTick(slider.value);
 
             document.body.appendChild(slider);
+        },
+        gameOver: function(){
+
         }
     },
 
@@ -627,6 +685,12 @@ const LEVELS={
         speed: 3
     },
 
+    "empty":{
+        enemies:[],
+        walls: [],
+        speed: 3
+    },
+
     "presets": {
         "enemies":{
 
@@ -672,11 +736,41 @@ const LEVELS={
 
                         if(this.ticksPassed() === 0) this.direction = { x: -1, y: -1 };
 
-                        if(this.y + this.direction.y * this.speed.y + this.sprite.height >= game.MAP_HEIGHT - 1){
-                            this.direction.y = -1;
-                        } else if(this.y + this.direction.y * this.speed.y < 0) {
-                            this.direction.y = 1;
+                        // if(this.y + this.direction.y * this.speed.y + this.sprite.height >= game.MAP_HEIGHT - 1){
+                        //     this.direction.y = -1;
+                        // } else if(this.y + this.direction.y * this.speed.y < 0) {
+                        //     this.direction.y = 1;
+                        // }
+                        
+                        this.moveToDir();
+
+                        if( this.ticksPassed() % this.fireRate == 0 ){
+                            this.fire();
                         }
+                    },
+                    fire: function() {
+                        for(let i = 0; i < this.bullets.length; i++){
+                            let bullet = new Bullet( { 
+                                x: this.x, 
+                                y: this.y + this.height / 2,
+                                ...this.bullets[i],
+                            } );
+                            bullet.y -= bullet.height / 2;
+                            game.objects.push( bullet );
+                        }
+                    },
+                },
+                "superEnemyDown": {
+                    ...defaultEnemy.ai,
+                    tick: function() {
+
+                        if(this.ticksPassed() === 0) this.direction = { x: -1, y: 1 };
+
+                        // if(this.y + this.direction.y * this.speed.y + this.sprite.height >= game.MAP_HEIGHT - 1){
+                        //     this.direction.y = -1;
+                        // } else if(this.y + this.direction.y * this.speed.y < 0) {
+                        //     this.direction.y = 1;
+                        // }
                         
                         this.moveToDir();
 
@@ -697,6 +791,7 @@ const LEVELS={
                     },
                 },
                 "move12": {
+                    ...defaultEnemy.ai,
                     tick: function() {
                         if(this.ticksPassed() === 0) {
                             this.direction = { x: -1, y: 0 };
@@ -710,13 +805,7 @@ const LEVELS={
                         if( this.ticksPassed() % this.fireRate == 0 ){
                             this.fire();
                         }
-                        
                     },
-                    check: function(point) {
-
-                    },
-                    fire: function() {
-                    }
                 },
                 "menuStart": {
                     ...defaultMenuEnemy.ai,
@@ -731,7 +820,7 @@ const LEVELS={
 
                         
 
-                        game.loadLevel("level1");
+                        game.loadLevel("custom");
                     }
                 },
                 "menuHighscore": {
@@ -766,9 +855,9 @@ const LEVELS={
                 "superEnemy": {
                     ...defaultEnemy.params,
                     dmg: 1,
-                    speed: { x: 10, y: 10 },
+                    speed: { x: 10, y: 5 },
                     hp: 3,
-                    fireRate: 20,
+                    fireRate: 50,
                     bullets: [
                         { design: "enemyBullet1" },
                         { design: "enemyBullet1", ai: "enemyBulletUp" },
@@ -998,7 +1087,7 @@ const LEVELS={
                 "shipBullet1": {
                     width:57,
                     height:103,
-                    speed: { x: 15, y: 0 },
+                    speed: { x: 20, y: 0 },
                     dmg: 1
                 },
             }
@@ -1095,3 +1184,6 @@ const LEVELS={
 
     }
 }
+
+LEVELS["custom"] = JSON.parse(`{"enemies":[{"tick":10,"x":1900,"y":500},{"tick":20,"x":1900,"y":400},{"tick":20,"x":1900,"y":600},{"tick":28,"x":1900,"y":700},{"tick":28,"x":1900,"y":300},{"tick":36,"x":1900,"y":200},{"tick":36,"x":1900,"y":800},{"tick":44,"x":1900,"y":900},{"tick":44,"x":1900,"y":100},{"tick":197,"x":1500,"y":500,"design":"superEnemy"},{"tick":200,"x":1500,"y":500,"design":"superEnemy","ai":"superEnemyDown"},{"tick":205,"x":1500,"y":500,"design":"superEnemy"},{"tick":211,"x":1500,"y":500,"design":"superEnemy","ai":"superEnemyDown"},{"tick":218,"x":1500,"y":500,"design":"superEnemy"},{"tick":225,"x":1500,"y":500,"design":"superEnemy","ai":"superEnemyDown"},{"tick":235,"x":1500,"y":500,"design":"superEnemy"},{"tick":244,"x":1500,"y":500,"design":"superEnemy","ai":"superEnemyDown"},{"tick":252,"x":1500,"y":500,"design":"superEnemy"},{"tick":263,"x":1500,"y":500,"design":"superEnemy","ai":"superEnemyDown"},{"tick":273,"x":1500,"y":500,"design":"superEnemy"},{"tick":284,"x":1500,"y":500,"design":"superEnemy","ai":"superEnemyDown"},{"tick":386,"x":1800,"y":700,"ai":"move12","design":"enemy1","params":"enemy1"},{"tick":392,"x":1800,"y":700,"ai":"move12"},{"tick":399,"x":1800,"y":700,"ai":"move12"},{"tick":403,"x":1800,"y":700,"ai":"move12"},{"tick":408,"x":1800,"y":700,"ai":"move12"},{"tick":416,"x":1800,"y":700,"ai":"move12"},{"tick":424,"x":1800,"y":700,"ai":"move12"},{"tick":430,"x":1800,"y":700,"ai":"move12"},{"tick":437,"x":1800,"y":700,"ai":"move12"},{"tick":446,"x":1800,"y":700,"ai":"move12"},{"tick":451,"x":1800,"y":700,"ai":"move12"}],"walls":[],"speed":3}`);
+LEVELS["custom"].ship = { x: 100, y: 500, design: "upgrade1", hp: 3, };

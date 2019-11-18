@@ -27,16 +27,15 @@
 			left: 0;
 		}
 
-		#directions{
-			position: fixed;
-			top: 1300px;
-			left: 0;
-		}
-
 		#picked-point{
 			width: 150px;
-			height: 150px;
+			height: 300px;
 			border: 1px solid red;
+		}
+
+		#exit{
+			position: fixed;
+			top: 1000px;
 		}
 
 	</style>
@@ -49,12 +48,16 @@
 	<div id="settings">
 		<div id="add-enemy">
 			<p>enemy</p>
-			<span>x:</span><input type="text" class="x">
-			<span>y:</span><input type="text" class="y">
-			<span>design:</span><input type="text" class="design">
+			<span>x:</span><input type="text" class="x" value="1500">
+			<span>y:</span><input type="text" class="y" value="500">
+			<span>design:</span><input type="text" class="design" value="superEnemy">
 			<span>ai:</span><input type="text" class="ai">
-			<span>param:</span><input type="text" class="param">
+			<span>params:</span><input type="text" class="params">
 			<button>add</button>
+			<div id="directions">
+				<button class="minus">minus</button>
+				<button class="plus">plus</button>
+			</div>
 		</div>
 		<div id="add-wall">
 			<p>wall</p>
@@ -62,19 +65,21 @@
 			<span>y:</span><input type="text" class="y">
 			<span>design:</span><input type="text" class="design">
 			<span>ai:</span><input type="text" class="ai">
-			<span>param:</span><input type="text" class="param">
+			<span>params:</span><input type="text" class="params">
 			<button>add</button>
 		</div>
 		<div id="picked-point">
-			<p class="design">Design: <span></span></p>
-			<p class="ai">Ai: <span></span></p>
-			<p class="params">Params: <span></span></p>
-		</div>
-		<div id="directions">
-			<button class="minus">minus</button>
-			<button class="plus">plus</button>
+			<span>x:</span><input type="text" class="x">
+			<span>y:</span><input type="text" class="y">
+			<span>design:</span><input type="text" class="design">
+			<span>ai:</span><input type="text" class="ai">
+			<span>params:</span><input type="text" class="params">
+			<button id="change">change</button>
+			<button id="delete">delete</button>
 		</div>
 		<input type="range" id="slider">
+		<button id="save">save</button>
+		<button id="exit">exit</button>
 	</div>
 </body>
 </html>

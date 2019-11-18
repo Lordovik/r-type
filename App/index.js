@@ -79,11 +79,11 @@ class Game {
 		// let background = new PIXI.Sprite(
 		// 	app.loader.resources["./images/backgrounds/city1.png"].texture
 		// );
-		let background = new PIXI.Sprite.from("./images/backgrounds/city1.png");
-		background.x = -this.tickCount * 4;
-		background.width = w;
-		background.height = h;
-		app.stage.addChild(background);
+		// let background = new PIXI.Sprite.from("./images/backgrounds/city1.png");
+		// background.x = -this.tickCount * 4;
+		// background.width = w;
+		// background.height = h;
+		// app.stage.addChild(background);
 
 		for(let i = 0; i < this.objects.length; i++){
 			let point = this.objects[i];
@@ -117,6 +117,11 @@ class Game {
 
 		}
 
+		// //render hp
+		if(this.ship){
+			this.renderShipHp();
+		}
+
 
 
 
@@ -130,11 +135,6 @@ class Game {
 		// 	// ctx.strokeStyle = "red";
 		// 	// ctx.strokeRect(point.x, point.y, point.width, point.height);
 
-		// }
-
-		// //render hp
-		// if(this.ship){
-		// 	this.renderShipHp();
 		// }
     }
     handleKeys(){
@@ -189,7 +189,11 @@ class Game {
 	}
 	loadLevel(level){
 		this.level = LEVELS[level];
+
+		if(!this.level.gameOver) this.level.gameOver = this.loadLevel.bind(this, "menu");
 		
+		this.tick = this.level.tick || tick;
+
 		if (this.level.init){
 			this.init = this.level.init;
 			this.init();
@@ -246,10 +250,14 @@ class Game {
 		app.stage.addChild(text);
 	}
 	renderShipHp(){
-		let ctx = this.ctx;
-		ctx.fillStyle = "#ffffff";
-		ctx.font = "30px sans-serif";
-		ctx.fillText(`Health: ${this.ship && this.ship.hp}`, 10, 40);
+		// let ctx = this.ctx;
+		// ctx.fillStyle = "#ffffff";
+		// ctx.font = "30px sans-serif";
+		// ctx.fillText(`Health: ${this.ship && this.ship.hp}`, 10, 40);
+		let text = new PIXI.Text(`Health: ${this.ship.hp}`, { fill: "0xffffff", fontFamily: "sans-serif", fontSize: "30px" });
+		text.x = 1700;
+		text.y = 40;
+		app.stage.addChild(text);
 	}
 	discardKeys(){
 		this.keysDown = {};
@@ -488,6 +496,7 @@ class Ship extends Point {
 
 class Enemy extends Point {
 	constructor( constructor ) {
+		let tick, x, y, design, params, ai, haveUpgrade, props;
 		({
 			tick,
 			x,
