@@ -4,7 +4,7 @@
 	<title>My Awesome Game!</title>
 	<style>
 		canvas{
-			position: fixed;
+			position: absolute;
 		}
 
 		#settings{
@@ -22,15 +22,36 @@
 		}
 
 		#slider{
-			position: fixed;
+			position: absolute;
 			top: 1300px;
 			left: 0;
 		}
 
 		#picked-point{
 			width: 150px;
-			height: 300px;
 			border: 1px solid red;
+		}
+
+		#add-enemy-design, #add-enemy-ai, #add-enemy-params{
+			position: relative;
+		}
+
+		#templates{
+			position: relative;
+			top: 1200px;
+			left: 0;
+		}
+
+		#templates>div>* {
+			display: inline-block;
+			margin-left: 3px;
+			padding: 3px;
+			cursor: pointer;
+		}
+
+		#templates>div>p:nth-child(1){
+			display: block;
+			cursor: default;
 		}
 
 		#exit{
@@ -38,35 +59,30 @@
 			top: 1000px;
 		}
 
+		.active{
+			border: 1px solid green;
+		}
+
 	</style>
 </head>
 <body style="border: 0px; padding: 0px; margin: 0px;">
-	<script src="https://pixijs.download/v5.2.0/pixi.js"></script>
-	<!-- <canvas id="canvas"></canvas> -->
+	<script src="App/jquery-3.4.1.js"></script>
+	<script src="App/pixi.min.js"></script>
 	<script src="App/levels.js"></script>
 	<script type="text/javascript" src="App/index.js"></script>
 	<div id="settings">
 		<div id="add-enemy">
 			<p>enemy</p>
-			<span>x:</span><input type="text" class="x" value="1500">
+			<span>x:</span><input type="text" class="x">
 			<span>y:</span><input type="text" class="y" value="500">
-			<span>design:</span><input type="text" class="design" value="superEnemy">
+			<span>design:</span><input type="text" class="design">
 			<span>ai:</span><input type="text" class="ai">
 			<span>params:</span><input type="text" class="params">
-			<button>add</button>
+			<button class="submit">add</button>
 			<div id="directions">
 				<button class="minus">minus</button>
 				<button class="plus">plus</button>
 			</div>
-		</div>
-		<div id="add-wall">
-			<p>wall</p>
-			<span>x:</span><input type="text" class="x">
-			<span>y:</span><input type="text" class="y">
-			<span>design:</span><input type="text" class="design">
-			<span>ai:</span><input type="text" class="ai">
-			<span>params:</span><input type="text" class="params">
-			<button>add</button>
 		</div>
 		<div id="picked-point">
 			<span>x:</span><input type="text" class="x">
@@ -74,12 +90,23 @@
 			<span>design:</span><input type="text" class="design">
 			<span>ai:</span><input type="text" class="ai">
 			<span>params:</span><input type="text" class="params">
-			<button id="change">change</button>
+			<button id="change" class="submit">change</button>
 			<button id="delete">delete</button>
 		</div>
 		<input type="range" id="slider">
 		<button id="save">save</button>
 		<button id="exit">exit</button>
+	</div>
+	<div id="templates">
+		<div id="add-enemy-design">
+			<p>designs</p>
+		</div>	
+		<div id="add-enemy-ai">
+			<p>ais</p>
+		</div>
+		<div id="add-enemy-params">
+			<p>params</p>
+		</div>
 	</div>
 </body>
 </html>

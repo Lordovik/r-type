@@ -6,11 +6,6 @@ function tick(){
 		this.genEnemy(this.currentEnemy);
 		this.currentEnemy = this.level.enemies[++this.currentEnemyID];
 	}
-	
-	while( this.currentWall && this.currentWall.tick == this.tickCount){
-		this.genEnemy(this.currentWall);
-		this.currentWall = this.level.walls[++this.currentWallID];
-	}
 
 	for(let i = 0; i < this.objects.length; i++){
 		this.checkObjectsFor(this.objects[i]);
@@ -155,7 +150,13 @@ class Game {
     start(){
 
         document.addEventListener('keydown', e => {
-            this.keysDown[e.key] = true;
+			this.keysDown[e.key] = true;
+			switch(e.key){
+				case 'ArrowUp':
+				case 'ArrowDown':
+				case ' ':
+					e.preventDefault();
+			}
         });
 
         document.addEventListener('keyup', e => {
@@ -163,7 +164,8 @@ class Game {
         });
 
         document.addEventListener('keypress', e => {
-            if(e.key === 'p') this.togglePause();
+			if(e.key === 'p') this.togglePause();
+			if(e.key === 'q') this.loadLevel("menu");
 		});
 
 		this.loadLevel("menu");
@@ -181,8 +183,6 @@ class Game {
 		if(this.level.enemies.length > 0){	
 			this.currentEnemyID = 0;
 			this.currentEnemy = this.level.enemies[this.currentEnemyID];
-			this.currentWallID = 0;
-			this.currentWall = this.level.walls && this.level.walls[this.currentWallID];
 		}
 
 		this.objects = [];
