@@ -3,17 +3,25 @@
 <head>
 	<title>My Awesome Game!</title>
 	<style>
+		*{
+			margin: 0;
+			padding: 0;
+		}
+
 		canvas{
 			position: absolute;
 		}
 
-		#settings{
+		.settings{
 			position: fixed;
 			left: 1940px;
 			width: 150px;
 		}
+		.settings > div{
+			margin-bottom: 10px;
+		}
 
-		#settings > div > input {
+		.settings > div > input {
 			display: block;
 		}
 
@@ -21,40 +29,39 @@
 			width: 25px;
 		}
 
-		#slider{
-			position: absolute;
+		.slider{
 			top: 1300px;
 			left: 0;
 		}
 
-		#picked-point{
+		.picked-point{
 			width: 150px;
 			border: 1px solid red;
 		}
 
-		#add-enemy-design, #add-enemy-ai, #add-enemy-params{
+		.enemy-design, .enemy-ai, .enemy-params{
 			position: relative;
 		}
 
-		#templates{
+		.templates{
 			position: relative;
 			top: 1200px;
 			left: 0;
 		}
 
-		#templates>div>* {
+		.templates>div>* {
 			display: inline-block;
 			margin-left: 3px;
 			padding: 3px;
 			cursor: pointer;
 		}
 
-		#templates>div>p:nth-child(1){
+		.templates>div>p:nth-child(1){
 			display: block;
 			cursor: default;
 		}
 
-		#exit{
+		.exit{
 			position: fixed;
 			top: 1000px;
 		}
@@ -63,49 +70,85 @@
 			border: 1px solid green;
 		}
 
+		.time-line{
+			position: absolute;
+			display: none;
+		}
+
+		.count{
+			width: 40px;
+		}
+
+		.time-line>*{
+			display: inline-block;
+		}
+
+		button{
+			width: 60px;
+			height: 30px;
+		}
+
+		.addons{
+			display: none;
+		}
+
+		.active .addons{
+			display: block;
+		}
+
+		div.addon>span{
+			margin-right: 7px;
+		}
+
 	</style>
 </head>
 <body style="border: 0px; padding: 0px; margin: 0px;">
+	<canvas id="canvas"></canvas>
 	<script src="App/jquery-3.4.1.js"></script>
-	<script src="App/pixi.min.js"></script>
+	<!-- <script src="App/pixi.min.js"></script> -->
 	<script src="App/levels.js"></script>
 	<script type="text/javascript" src="App/index.js"></script>
-	<div id="settings">
-		<div id="add-enemy">
+	<div class="settings">
+		<div class="add-enemy">
 			<p>enemy</p>
 			<span>x:</span><input type="text" class="x">
 			<span>y:</span><input type="text" class="y" value="500">
 			<span>design:</span><input type="text" class="design">
 			<span>ai:</span><input type="text" class="ai">
 			<span>params:</span><input type="text" class="params">
-			<button class="submit">add</button>
-			<div id="directions">
-				<button class="minus">minus</button>
-				<button class="plus">plus</button>
-			</div>
+			<button class="add submit">add</button>
 		</div>
-		<div id="picked-point">
+		<div class="picked-point">
 			<span>x:</span><input type="text" class="x">
 			<span>y:</span><input type="text" class="y">
 			<span>design:</span><input type="text" class="design">
 			<span>ai:</span><input type="text" class="ai">
 			<span>params:</span><input type="text" class="params">
-			<button id="change" class="submit">change</button>
-			<button id="delete">delete</button>
+			<button class="change submit">change</button>
+			<button class="delete">delete</button>
 		</div>
-		<input type="range" id="slider">
-		<button id="save">save</button>
-		<button id="exit">exit</button>
+		<span>name:</span><input type="text" class="level-name">
+		<button class="save">save</button>
+		<button class="exit">exit</button>
 	</div>
-	<div id="templates">
-		<div id="add-enemy-design">
+	<div class="templates">
+		<div class="enemy-design">
 			<p>designs</p>
 		</div>	
-		<div id="add-enemy-ai">
+		<div class="enemy-ai">
 			<p>ais</p>
 		</div>
-		<div id="add-enemy-params">
+		<div class="enemy-params">
 			<p>params</p>
+		</div>
+	</div>
+	<div class="time-line">
+		<input type="range" class="slider">
+		<input type="text" class="count" value="0">
+		<button class="go submit">go</button>
+		<div class="directions">
+			<button class="minus">minus</button>
+			<button class="plus">plus</button>
 		</div>
 	</div>
 </body>

@@ -2,11 +2,78 @@
 
 const TICKS_PER_SEC = 30;
 
+const devMode = 1;
+
 const w = 1920;//window.innerWidth;
 const h = 1080; //window.innerHeight;
 const scale = window.devicePixelRatio;
 const w2 = w/2;
 const h2 = h/2;
+
+/**
+ * Function: ajaj
+ * Parameters:
+ *		url typeof String		- URL по которому будет происходить запрос
+ *		data typeof Object		- Объект ключ/значение что мы передаем
+ *		success typeof Function	- Функция которую вызвать при успехе, параметр Object который вернется запросом
+ */
+function ajaj(url,data,success)
+{
+    if(devMode){
+        $.ajax({
+            url:"http://rtype.pronetcom.ru"+url,
+            method:"POST",
+            data:data,
+            success:function(ret) {
+                if (typeof ret=="string") ret=JSON.parse(ret);
+                if (ret.ok) success(ret); else alert("Что-то пошло не так "+(ret.error||JSON.stringify(ret)));
+            }
+        });
+        return;
+    }
+
+    // fetch("http://rtype.pronetcom.ru"+url)
+    // .then( (res) => {
+    //     return res.json();
+    // } )
+    // .then ( (ret) => {
+	// 	if (typeof ret=="string") ret=JSON.parse(ret);
+	// 	if (ret.ok) success(ret); else alert("Что-то пошло не так "+(ret.error||JSON.stringify(ret)));
+    // } );
+
+    
+	 let xhr = new XMLHttpRequest();
+	 xhr.open('POST', "http://rtype.pronetcom.ru"+url, true);
+	 xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+//	 let fdata = new FormData();
+//	 for (let k in data) fdata.append(k,data[k]);
+	 xhr.onreadystatechange = function() {//Вызывает функцию при смене состояния.
+	 	// console.log(xhr.readyState, xhr.status, XMLHttpRequest.DONE);
+	 	if(xhr.readyState == xhr.DONE && xhr.status == 200) {
+	 		// console.log(xhr);
+             // Запрос завершен. Здесь можно обрабатывать результат.
+            let ret = xhr.responseText;
+	 		if (typeof ret == "string") ret=JSON.parse(xhr.responseText);
+	 		if (ret.ok) success(ret); else alert("Что-то пошло не так "+(ret.error||JSON.stringify(ret)));
+	 	}
+	 	// TODO обработать статус не 200 (404, 500)
+	 };
+	 xhr.send();
+}
+
+if (!window.localStorage.getItem("deviceid")) {
+	// Делается запрос к http://rtype.pronetcom.ru/api/user_create/
+	ajaj("/api/user_create/",{},function(ret) {
+		window.localStorage.setItem("deviceid",ret.login);
+	});
+}
+
+// TODO добавить результат в переменную levels (ну и campaigns и так далее)
+// ajaj("/api/load_levels",{},function(ret) { console.log(ret); })
+//
+//ajaj("/api/register/",{a:"hello"})
+
+
 
 const defaultMenuEnemy = {
     "design": {
@@ -24,6 +91,35 @@ const defaultMenuEnemy = {
             this.type = "ME";
         },
         activateMenu: function(){},
+        showLevels: function(ai) {
+            for(let i = 0; i < game.objects.length; i++){
+                let curr = game.objects[i];
+                if(curr.type != "ME") continue;
+
+                curr.die();
+            }
+
+            let finalLevelList = [...levelList];
+            if(ai === 'menuLevelEdit'){
+                finalLevelList.unshift('empty');
+            }
+
+            for(let i = 0; i < finalLevelList.length; i++){
+                let x = "center";
+                let y = 100 * (i + 1);
+                let menuLevelItem = { x, y, design: "menuLevel", text: finalLevelList[i] };
+
+                if(ai) menuLevelItem.ai = ai;
+
+                game.genEnemy( menuLevelItem );
+            }
+
+            if(game.ship.isDead()){
+                game.ship = new Ship( {design: "menuShip"} );
+                game.objects.push(game.ship);
+            }
+            game.ship.currMenuID = 0;
+        }
     },
     "params": {},
 }
@@ -31,7 +127,7 @@ const defaultMenuEnemy = {
 const defaultExplosion = {
     "design": {
         tileSet: {
-            src: "./images/explosions/explosion1.png",
+            src: "images/explosions/explosion1.png",
             width: 48, 
             height: 48,
             tiles: [
@@ -89,13 +185,19 @@ const defaultExplosion = {
 
 const defaultEnemy = {
     "design": {
-        width: 35,
-        height: 70, 
-        sprite: { imgSrc: "./images/enemies/enemy.png", width: 71, height: 69, offsetX: -30 },
+        width: 40,
+        height: 25, 
+        sprite: { imgSrc: "images/enemies/enemy1.png", width: 64, height: 64, },
         deathExplosion: { design: "explosion1" },
         hitExplosion: { design: "smallExplosion" },
     },
     "ai": {
+        init(){
+            this.direction = { x: -1, y: 0 };
+            this.direction.x = this.directionX || -1;
+            this.direction.y = this.directionY || 0;
+        },
+
         check: function(point) {
             switch(point.type){
                 case 'S':
@@ -105,17 +207,17 @@ const defaultEnemy = {
         },
         tick: function() {
 
-            if(this.ticksPassed() === 0) this.direction = { x: -1, y: 0 };
+            // if(this.ticksPassed() === 0) this.direction = { x: -1, y: 0 };
             
-            if(this.y + this.direction.y * this.speed.y + this.sprite.height >= game.MAP_HEIGHT - 1){
-                this.direction.y = -1;
-            } else if(this.y + this.direction.y * this.speed.y < 0) {
-                this.direction.y = 1;
-            }
+            // if(this.y + this.direction.y * this.speed.y + this.sprite.height >= game.MAP_HEIGHT - 1){
+            //     this.direction.y = -1;
+            // } else if(this.y + this.direction.y * this.speed.y < 0) {
+            //     this.direction.y = 1;
+            // }
             
             this.moveToDir();
 
-            if( this.ticksPassed() % this.fireRate == 0 ){
+            if( this.ticksPassed() && this.ticksPassed() % this.fireRate == 0 ){
                 this.fire();
             }
 
@@ -149,15 +251,15 @@ const defaultEnemy = {
         speed: { x: 10, y: 5 },
         hp: 1,
         bullets: [{design: "enemyBullet1"}],
-        fireRate: 50
+        fireRate: 30
     },
 }
 
 const defaultShip = {
     "design": {
-        width: 20,
-        height: 60,
-        sprite: { imgSrc: "images/ships/mainShip.png", width: 71, height: 69, offsetX: -10 },
+        width: 80,
+        height: 20,
+        sprite: { imgSrc: "images/ships/mainShip.png", width: 128, height: 128, offsetX: -20 },
     },
     "ai": {
         tick: function() {
@@ -278,12 +380,12 @@ const defaultBullet = {
 
 const defaultWall = {
     "design": {
-        width: 90,
-        height: 90,
+        width: 72,
+        height: 72,
         sprite: {
-            imgSrc: "./images/walls/wall1.png",
-            width: 100,
-            height: 100,
+            imgSrc: "images/walls/wall1.png",
+            width: 72,
+            height: 72,
         }
     },
     "ai":{
@@ -293,6 +395,8 @@ const defaultWall = {
             this.speed.x = game.level.speed || this.speed.x || 5;
             this.height = game.MAP_HEIGHT - this.y;
             this.sprite.height = game.MAP_HEIGHT - this.y - (this.sprite.offsetY || 0);
+            this.width = +this.width;
+            this.sprite.width = +this.width;
         },
         tick: function(){
             this.moveToDir();
@@ -310,7 +414,7 @@ const defaultUpgrade = {
     "design": {
         width: 30,
         height: 30,
-        sprite: { imgSrc: "./images/upgrades/upgrade1.png", width: 30, height: 30 },
+        sprite: { imgSrc: "images/upgrades/upgrade1.png", width: 30, height: 30 },
     },
     "ai": {
         init: function(){
@@ -334,24 +438,35 @@ const defaultUpgrade = {
     }
 }
 
-const levelList = [
-    "level1",
-    "level2",
-]
+const levelList = [];
+
+ajaj("/api/load_levels/", {}, function(ret){
+    if(!ret.ok) console.log( "Can't load ", ret.error);
+
+    console.log("Loaded levels: ", ret.levels);
+
+    let levels = ret.levels;
+    levels.map( ( {name} ) => {
+        levelList.push(name);
+    });
+
+});
 
 const invisiblePresets = {
     "menuStart": true,
     "menuHighscore": true,
     "menuEdit": true,
+    "menuLevel": true,
+    "menuLevelEdit": true,
 }
 
 const LEVELS={
     "menu": {
         enemies: [
-            { tick: 0, x: "center", y: 300, design: "menuEdit" },
-            { tick: 0, x: "center", y: "center", design: "menuStart", },
+//            { tick: 0, x: "center", y: 300, design: "menuEdit" },
+            { tick: 0, x: "center", y: 400, design: "menuStart", },
             { tick: 0, x: 1500, y: 100, },
-            { tick: 0, x: "center", y: 700, design: "menuHighscore" },
+            // { tick: 0, x: "center", y: 700, design: "menuHighscore" },
         ],
         ship: { design: "menuShip", },
     },
@@ -360,6 +475,7 @@ const LEVELS={
             { tick: 1, x: 1500,y: 100, },
         ],
         tick: function(){
+            let slider = document.querySelector(".slider");
             for(let key in this.keysDown){
                 if(!this.keysDown[key]) continue;
                 switch(key){
@@ -372,14 +488,14 @@ const LEVELS={
                         this.changeTick(slider.value);
                         break;
                     case "Enter":
-                        document.querySelector(this.focusBlockSelector + ">.submit").onclick();
+                        document.querySelector(this.focusButton).onclick();
                         break;
                 }
             }
         },
-        init: function(){
+        init: function(editedLevel){
             
-            let levelLength = 1600;
+            let levelLength = 4000;
 
             this.tickCount = 0;
     
@@ -387,27 +503,30 @@ const LEVELS={
 
             this.objects = [];
 
-            let currLevel = "custom";
+            let currLevel = editedLevel;
+
+            document.querySelector(".level-name").value = currLevel == "empty" ? '' : currLevel;
 
             this.level.enemies = LEVELS[currLevel].enemies;
 
             this.level.speed = LEVELS[currLevel].speed;
 
-            let slider = document.querySelector("#slider");
-            slider.style.top = h + 30 + 'px';
-            slider.style.width = w + "px";
-            slider.max = levelLength;
-            slider.min = 0;
-            slider.value = 0;
+            $(".time-line").css({
+                top: h + 30 + 'px',
+                display: "block",
+            });
 
-            let enemyDesignsBlock = document.querySelector("#add-enemy-design");
-            enemyDesignsBlock.style.width = w + "px";
+            $(".slider").css({
+                width: w + 'px',
+            }).attr({
+                max: levelLength,
+                min: 0,
+                value: 0,
+            });
 
-            let enemyAisBlock = document.querySelector("#add-enemy-ai");
-            enemyAisBlock.style.width = w + "px";
-            
-            let enemyParamsBlock = document.querySelector("#add-enemy-params");
-            enemyParamsBlock.style.width = w + "px";
+            let slider = document.querySelector(".slider");
+
+            $(".enemy-design, .enemy-ai, .enemy-params").css("width", w + 'px');
 
             let enemyDesigns = LEVELS.presets.enemies.design;
             let enemyAis = LEVELS.presets.enemies.ai;
@@ -421,17 +540,51 @@ const LEVELS={
                     
                     let enemyBlock;
 
-                    if(item.sprite){
+                    if_st: if(item.sprite){
+
                         enemyBlock = document.createElement("div");
                         let image = document.createElement("img");
                         image.src = item.sprite.imgSrc;
                         image.style.width = "100px";
                         image.style.height = "100px";
                         enemyBlock.appendChild(image);
+
                     } else if(presets === enemyAis){
+
                         enemyBlock = document.createElement("div");
-                        enemyBlock.innerHTML = item.description || key;
+                        let desc = document.createElement("p");
+                        desc.classList.add("description");
+                        desc.innerHTML = item.description || key;
+                        enemyBlock.appendChild(desc);
+
+                        if(!item.addons || item.addons.length == 0) break if_st;
+
+                        let addonsContainer = document.createElement("div");
+                        addonsContainer.classList.add("addons");
+                        let addonList = item.addons;
+
+                        for(let i = 0; i < addonList.length; i++){
+                            let addonContainer = document.createElement("div");
+                            addonContainer.classList.add("addon");
+                            addonContainer.dataset.property = addonList[i];
+
+                            let addonDesc = document.createElement("span");
+                            addonDesc.classList.add("addon-description");
+                            addonDesc.innerHTML = addonList[i];
+                            addonContainer.appendChild(addonDesc);
+
+                            let addonInput = document.createElement("input");
+                            addonInput.type = "text";
+                            addonInput.classList.add("addon-value");
+                            addonContainer.appendChild(addonInput);
+
+                            addonsContainer.appendChild(addonContainer);
+                        }
+
+                        enemyBlock.appendChild(addonsContainer);
+
                     } else {
+
                         enemyBlock = document.createElement("div");
                         for(let itemKey in item){
                             let property = document.createElement("p");
@@ -439,13 +592,17 @@ const LEVELS={
                             property.innerHTML = itemKey + ": " + JSON.stringify(item[itemKey]);
                             enemyBlock.appendChild(property);
                         }
+
                     }
-                    enemyBlock.origin = key;
+                    
                     enemyBlock.classList.add(className);
+                    enemyBlock.setAttribute("data-origin", key);
     
                     enemyBlock.onclick = function() {
                         let enemyDesignInput = document.querySelector(game.focusBlockSelector + ">." + className);
-                        enemyDesignInput.value = this.origin;
+                        enemyDesignInput.value = this.getAttribute("data-origin");
+
+                        this.focusButton = game.focusBlockSelector + ">.submit";
     
                         let active = document.querySelector(selector + ">.active");
     
@@ -458,15 +615,15 @@ const LEVELS={
                 }
             }
 
-            createPresetsView(enemyDesigns, "#add-enemy-design", "design");
-            createPresetsView(enemyAis, "#add-enemy-ai", "ai");
-            createPresetsView(enemyParams, "#add-enemy-params", "params");
+            createPresetsView(enemyDesigns, ".enemy-design", "design");
+            createPresetsView(enemyAis, ".enemy-ai", "ai");
+            createPresetsView(enemyParams, ".enemy-params", "params");
 
             const changeSlider = () => {
                 this.changeTick(slider.value);
             }
 
-            slider.addEventListener("change", changeSlider);
+            document.querySelector(".slider").onchange = (changeSlider);
 
             this.changeTick = (tickCount) => {
 
@@ -476,35 +633,37 @@ const LEVELS={
                 for(let i = 0; i < tickCount; i++){
                     tickFunc();
                 }
+                document.querySelector(".count").value = this.tickCount;
             }
 
-            this.focusBlockSelector = "#add-enemy";
+            this.focusBlockSelector = ".add-enemy";
 
             const pickEnemy = (e) => {
-                if(e.target != this.canvas) return;
+                if(e.target != canvas) return;
 
                 let x = e.layerX;
                 let y = e.layerY;
-                let xInput = document.querySelector("#picked-point>.x");
-                let yInput = document.querySelector("#picked-point>.y");
-                let designInput = document.querySelector("#picked-point>.design");
-                let aiInput = document.querySelector("#picked-point>.ai");
-                let paramsInput = document.querySelector("#picked-point>.params");
+                let xInput = document.querySelector(".picked-point>.x");
+                let yInput = document.querySelector(".picked-point>.y");
+                let designInput = document.querySelector(".picked-point>.design");
+                let aiInput = document.querySelector(".picked-point>.ai");
+                let paramsInput = document.querySelector(".picked-point>.params");
 
 
                 for(let i = 0; i < this.objects.length; i++){
                     let curr = this.objects[i];
                     if(!(curr instanceof Enemy)) continue;
 
-                    let width = curr.sprite.width || curr.width;
-                    let height = curr.sprite.height || curr.height;
+                    let width = curr.width;
+                    let height = curr.height;
 
                     if( !(x > curr.x && x < curr.x + width) ||
                         !(y > curr.y && y < curr.y + height) ) {
                             continue;
                     }
 
-                    this.focusBlockSelector = "#picked-point";
+                    this.focusBlockSelector = ".picked-point";
+                    this.focusButton = ".picked-point>.submit";
 
                     xInput.value = curr.origin.x;
                     yInput.value = curr.origin.y;
@@ -512,22 +671,22 @@ const LEVELS={
                     aiInput.value = curr.origin.ai || curr.ai;
                     paramsInput.value = curr.origin.params || curr.params;
 
-                    // let currActive = document.querySelectorAll("#templates .active");
-                    // for(let i = 0; i < currActive.length; i++)
-                    //     currActive[i].classList.remove("active");
+                    $(".templates .active").removeClass("active");
+                    
+                    $(`.templates .design[data-origin=${curr.origin.design || "enemy1"}],
+                    .templates .ai[data-origin=${curr.origin.ai || "enemy1"}],
+                    .templates .params[data-origin=${curr.origin.params || "enemy1"}]`)
+                    .addClass("active");
 
-                    // let templates = document.querySelectorAll("#templates>div>div");
-                    // for(let i = 0; i < templates.length; i++){
-                    //     let currOriginDesign = curr.origin.design || "enemy1";
-                    //     let currOriginAi = curr.origin.ai || "enemy1";
-                    //     let currOriginParams = curr.origin.params || "enemy1";
-                        
-                    //     if( templates[i].origin !== currOriginDesign
-                    //         && templates[i].origin !== currOriginAi
-                    //         && templates[i].origin !== currOriginParams ) continue;
+                    let addons = $(`.ai[data-origin=${curr.origin.ai}] .addon`);
+                    for(let j = 0; j < addons.length; j++){
+                        let addon = addons[j];
+                        let addonProperty = addon.dataset.property;
+                        let addonValue = $(addon).children(".addon-value");
 
-                    //     templates[i].classList.add("active");
-                    // }
+                        if(curr[addonProperty]) addonValue.val( curr[addonProperty] );
+                        else addonValue.val('');
+                    }
 
 
                     this.pickedOrigin = curr.origin;
@@ -535,12 +694,16 @@ const LEVELS={
                     return;
                 }
 
-                this.focusBlockSelector = "#add-enemy";
+                $(".templates .active").removeClass("active");
+                $('.addon-value').val('');
+                this.focusBlockSelector = ".add-enemy";
+                this.focusButton = ".add-enemy>.submit";
                 xInput.value = null;
                 yInput.value = null;
                 designInput.value = null;
                 aiInput.value = null;
                 paramsInput.value = null;
+                this.pickedOrigin = null;
             }
             document.addEventListener("click", pickEnemy);
 
@@ -555,10 +718,19 @@ const LEVELS={
                     if(!x) x = w;
                     if(!y) y = h;
 
-                    let enemy = { tick: this.tickCount, x: +x, y: +y, };
+                    let enemy = { tick: this.tickCount <= 0 ? 0 : this.tickCount - 1, x: +x, y: +y, };
                     if(design) enemy.design = design;
                     if(ai) enemy.ai = ai;
                     if(params) enemy.params = params;
+
+                    let addons = $(".ai+.active .addon");
+                    for(let i = 0; i < addons.length; i++){
+                        let addon = addons[i];
+                        let value = $(addon).children(".addon-value").val();
+                        let property = addon.dataset.property;
+                        enemy[property] = value;
+                    }
+
                     addFunc(enemy);
                     this.changeTick(slider.value);
                 }.bind(this);
@@ -571,23 +743,40 @@ const LEVELS={
                 });
             }
 
-            let addEnemyButton = document.querySelector("#add-enemy>button");
-            addEnemyButton.onclick = onAddClick("#add-enemy", addEnemy);
+            let addEnemyButton = document.querySelector(".add-enemy>button");
+            addEnemyButton.onclick = onAddClick(".add-enemy", addEnemy);
 
-            let changeEnemyButton = document.querySelector("#picked-point>#change");
+            let changeEnemyButton = document.querySelector(".picked-point>.change");
             changeEnemyButton.onclick = (e) => {
-                this.pickedOrigin.x = +document.querySelector("#picked-point>.x").value;
-                this.pickedOrigin.y = +document.querySelector("#picked-point>.y").value;
-                this.pickedOrigin.design = document.querySelector("#picked-point>.design").value;
-                this.pickedOrigin.ai = document.querySelector("#picked-point>.ai").value;
-                this.pickedOrigin.params = document.querySelector("#picked-point>.params").value;
+                if(!this.pickedOrigin) return;
+                let enemy = this.pickedOrigin;
+
+                enemy.x = +document.querySelector(".picked-point>.x").value;
+                enemy.y = +document.querySelector(".picked-point>.y").value;
+                enemy.design = document.querySelector(".picked-point>.design").value;
+                enemy.ai = document.querySelector(".picked-point>.ai").value;
+                enemy.params = document.querySelector(".picked-point>.params").value;
+
+                let addons = $(".ai+.active .addon");
+                for(let i = 0; i < addons.length; i++){
+                    let addon = addons[i];
+                    let value = $(addon).children(".addon-value").val();
+                    let property = addon.dataset.property;
+                    enemy[property] = value;
+                }
             }
 
-            let deleteEnemyButton = document.querySelector("#picked-point>#delete");
+            let deleteEnemyButton = document.querySelector(".picked-point>.delete");
             deleteEnemyButton.onclick = (e) => {
                 for(let i = 0; i < this.level.enemies.length; i++){
                     if(this.level.enemies[i] !== this.pickedOrigin) continue;
                     this.level.enemies.splice(i, 1);
+                    this.pickedOrigin = null;
+                    this.changeTick(this.tickCount);
+
+                    
+
+                    return;
                 }
             }
 
@@ -603,12 +792,42 @@ const LEVELS={
                 this.changeTick(slider.value);
             }
 
-            let saveButton = document.querySelector("#save");
+            let saveButton = document.querySelector(".save");
             saveButton.onclick = (e) => {
-                console.log(JSON.stringify(this.level));
+                let levelName = document.querySelector(".level-name").value;
+                if(!levelName || levelName == "empty") return;
+
+                let req = {data: JSON.stringify(this.level), name: levelName};
+                ajaj("/api/save_level/", req, function(ret){
+                    console.log(ret);
+                });
             }
 
-            let exitButton = document.querySelector("#exit");
+            let goButton = document.querySelector(".go");
+            goButton.onclick = () => {
+                let val = document.querySelector(".count").value;
+                slider.value = val;
+                this.changeTick( val );
+            }
+
+            this.focusButton = ".add-enemy>.submit"
+
+            $(".count")
+            .mousedown(() => {
+                this.focusButton = ".time-line>.submit";
+            });
+
+            $(".add-enemy")
+            .mousedown(() => {
+                this.focusButton = ".add-enemy>.submit";
+            })
+
+            $(".picked-point")
+            .mousedown(() => {
+                this.focusButton = ".picked-point>.submit";
+            })
+
+            let exitButton = document.querySelector(".exit");
             exitButton.onclick = (e) => {
                 slider.removeEventListener("change", changeSlider);
                 document.removeEventListener("click", pickEnemy);
@@ -618,149 +837,160 @@ const LEVELS={
                 plusButton.onclick = null;
                 minusButton.onclick = null;
                 saveButton.onclick = null;
+                goButton.onclick = null;
                 exitButton.onclick = null;
+
+                $(` .templates .design,
+                    .templates .ai,
+                    .templates .params`).remove();
+
+                slider.value = 0;
+                $(".picked-point").unbind();
+                $(".add-enemy").unbind();
+                $(".count").unbind();
 
                 this.loadLevel("menu");
             }
 
-            this.changeTick(slider.value);
+            // this.changeTick(slider.value);
 
-            document.body.appendChild(slider);
+            // document.body.appendChild(slider);
         },
         gameOver: function(){
 
         }
     },
 
-    "level1":{
-        enemies:[
-            { tick:    50,  x: 1900,y: 100, },
-            { tick:    50,  x: 1900,y: 200, },
-            { tick:    50,  x: 1900,y: 300, },
-            { tick:    50,  x: 1900,y: 400, },
-            { tick:    50,  x: 1900,y: 500, },
-            { tick:    50,  x: 1900,y: 600, },
-            { tick:    60,  x: 1900,y: 100, },
-            { tick:    60,  x: 1900,y: 200, },
-            { tick:    60,  x: 1900,y: 300, },
-            { tick:    60,  x: 1900,y: 400, },
-            { tick:    60,  x: 1900,y: 500, },
-            { tick:    60,  x: 1900,y: 600, },
-            { tick:    70,  x: 1900,y: 100, },
-            { tick:    70,  x: 1900,y: 200, },
-            { tick:    70,  x: 1900,y: 300, },
-            { tick:    70,  x: 1900,y: 400, },
-            { tick:    70,  x: 1900,y: 500, },
-            { tick:    70,  x: 1900,y: 600, },
-            { tick:    80,  x: 1900,y: 100, },
-            { tick:    80,  x: 1900,y: 200, },
-            { tick:    80,  x: 1900,y: 300, },
-            { tick:    80,  x: 1900,y: 400, },
-            { tick:    80,  x: 1900,y: 500, },
-            { tick:    80,  x: 1900,y: 600, },
-            { tick:    90,  x: 1900,y: 100, },
-            { tick:    90,  x: 1900,y: 200, },
-            { tick:    90,  x: 1900,y: 300, },
-            { tick:    90,  x: 1900,y: 400, },
-            { tick:    90,  x: 1900,y: 500, },
-            { tick:    90,  x: 1900,y: 600, },
-            { tick:    100, x: 1900,y: 100, },
-            { tick:    100, x: 1900,y: 200, },
-            { tick:    100, x: 1900,y: 300, },
-            { tick:    100, x: 1900,y: 400, },
-            { tick:    100, x: 1900,y: 500, },
-            { tick:    100, x: 1900,y: 600, },
-            { tick:    110, x: 1900,y: 100, },
-            { tick:    110, x: 1900,y: 200, },
-            { tick:    110, x: 1900,y: 300, },
-            { tick:    110, x: 1900,y: 400, },
-            { tick:    110, x: 1900,y: 500, },
-            { tick:    110, x: 1900,y: 600, },
-            { tick:    120, x: 1900,y: 100, },
-            { tick:    120, x: 1900,y: 200, },
-            { tick:    120, x: 1900,y: 300, },
-            { tick:    120, x: 1900,y: 400, },
-            { tick:    120, x: 1900,y: 500, },
-            { tick:    120, x: 1900,y: 600, },
-            { tick:    130, x: 1900,y: 100, },
-            { tick:    130, x: 1900,y: 200, },
-            { tick:    130, x: 1900,y: 300, },
-            { tick:    130, x: 1900,y: 400, },
-            { tick:    130, x: 1900,y: 500, },
-            { tick:    130, x: 1900,y: 600, },
-            { tick:    140, x: 1900,y: 100, },
-            { tick:    140, x: 1900,y: 200, },
-            { tick:    140, x: 1900,y: 300, },
-            { tick:    140, x: 1900,y: 400, },
-            { tick:    140, x: 1900,y: 500, },
-            { tick:    140, x: 1900,y: 600, },
-            { tick:    150, x: 1900,y: 100, },
-            { tick:    150, x: 1900,y: 200, },
-            { tick:    150, x: 1900,y: 300, },
-            { tick:    150, x: 1900,y: 400, },
-            { tick:    150, x: 1900,y: 500, },
-            { tick:    150, x: 1900,y: 600, },
-            { tick:    160, x: 1900,y: 100, },
-            { tick:    160, x: 1900,y: 200, },
-            { tick:    160, x: 1900,y: 300, },
-            { tick:    160, x: 1900,y: 400, },
-            { tick:    160, x: 1900,y: 500, },
-            { tick:    160, x: 1900,y: 600, },
-            { tick:    170, x: 1900,y: 100, },
-            { tick:    170, x: 1900,y: 200, },
-            { tick:    170, x: 1900,y: 300, },
-            { tick:    170, x: 1900,y: 400, },
-            { tick:    170, x: 1900,y: 500, },
-            { tick:    170, x: 1900,y: 600, },
-            { tick:    180, x: 1900,y: 100, },
-            { tick:    180, x: 1900,y: 200, },
-            { tick:    180, x: 1900,y: 300, },
-            { tick:    180, x: 1900,y: 400, },
-            { tick:    180, x: 1900,y: 500, },
-            { tick:    180, x: 1900,y: 600, },
-            { tick:    190, x: 1900,y: 100, },
-            { tick:    190, x: 1900,y: 200, },
-            { tick:    190, x: 1900,y: 300, },
-            { tick:    190, x: 1900,y: 400, },
-            { tick:    190, x: 1900,y: 500, },
-            { tick:    190, x: 1900,y: 600, },
-            { tick:    200, x: 1900,y: 100, },
-            { tick:    200, x: 1900,y: 200, },
-            { tick:    200, x: 1900,y: 300, },
-            { tick:    200, x: 1900,y: 400, },
-            { tick:    200, x: 1900,y: 500, },
-            { tick:    200, x: 1900,y: 600, },
-            { tick:    210, x: 1900,y: 100, },
-            { tick:    210, x: 1900,y: 200, },
-            { tick:    210, x: 1900,y: 300, },
-            { tick:    210, x: 1900,y: 400, },
-            { tick:    210, x: 1900,y: 500, },
-            { tick:    210, x: 1900,y: 600, },
-            { tick:    220, x: 1900,y: 100, },
-            { tick:    220, x: 1900,y: 200, },
-            { tick:    220, x: 1900,y: 300, },
-            { tick:    220, x: 1900,y: 400, },
-            { tick:    220, x: 1900,y: 500, },
-            { tick:    220, x: 1900,y: 600, },
-            // { tick:    70, x:91500,y: 800, ai: "move12",  params: "noob"},
-            // { tick:    90, x:91500,y: 800, ai: "move12",  params: "noob"},
-            // { tick:   110, x: 1500,y: 780, ai: "move12",  params: "noob"},
-            // { tick:   130, x: 1500,y: 760, ai: "move12",  params: "noob"},
-            // { tick:   150, x: 1500,y: 740, ai: "move12",  params: "noob"},
-            // { tick:   170, x: 1500,y: 720, ai: "move12",  params: "noob",},
-            // { tick: 200,x: 1500,y: 200, design: "superEnemy", },
-            //{ tick: 50,x: 1500,y: 300, ai: "enemy1", design: "enemy1", haveUpgrade: { design:"upgrade1" }, params: "enemy1", },
-            // { tick: 300,x: 1500,y: 400, },
-            // { tick: 350,x: 1500,y: 500, },
-        ],
-        ship: { x: 100, y: 500, design: "upgrade1" },
-        background: [
-            "city1",
-            "city2",
-            "city3",
-        ],
-        speed: 3
-    },
+    // "level1":{
+    //     enemies:[
+    //         { tick:    50,  x: 1900,y: 100, },
+    //         { tick:    50,  x: 1900,y: 200, },
+    //         { tick:    50,  x: 1900,y: 300, },
+    //         { tick:    50,  x: 1900,y: 400, },
+    //         { tick:    50,  x: 1900,y: 500, },
+    //         { tick:    50,  x: 1900,y: 600, },
+    //         { tick:    60,  x: 1900,y: 100, },
+    //         { tick:    60,  x: 1900,y: 200, },
+    //         { tick:    60,  x: 1900,y: 300, },
+    //         { tick:    60,  x: 1900,y: 400, },
+    //         { tick:    60,  x: 1900,y: 500, },
+    //         { tick:    60,  x: 1900,y: 600, },
+    //         { tick:    70,  x: 1900,y: 100, },
+    //         { tick:    70,  x: 1900,y: 200, },
+    //         { tick:    70,  x: 1900,y: 300, },
+    //         { tick:    70,  x: 1900,y: 400, },
+    //         { tick:    70,  x: 1900,y: 500, },
+    //         { tick:    70,  x: 1900,y: 600, },
+    //         { tick:    80,  x: 1900,y: 100, },
+    //         { tick:    80,  x: 1900,y: 200, },
+    //         { tick:    80,  x: 1900,y: 300, },
+    //         { tick:    80,  x: 1900,y: 400, },
+    //         { tick:    80,  x: 1900,y: 500, },
+    //         { tick:    80,  x: 1900,y: 600, },
+    //         { tick:    90,  x: 1900,y: 100, },
+    //         { tick:    90,  x: 1900,y: 200, },
+    //         { tick:    90,  x: 1900,y: 300, },
+    //         { tick:    90,  x: 1900,y: 400, },
+    //         { tick:    90,  x: 1900,y: 500, },
+    //         { tick:    90,  x: 1900,y: 600, },
+    //         { tick:    100, x: 1900,y: 100, },
+    //         { tick:    100, x: 1900,y: 200, },
+    //         { tick:    100, x: 1900,y: 300, },
+    //         { tick:    100, x: 1900,y: 400, },
+    //         { tick:    100, x: 1900,y: 500, },
+    //         { tick:    100, x: 1900,y: 600, },
+    //         { tick:    110, x: 1900,y: 100, },
+    //         { tick:    110, x: 1900,y: 200, },
+    //         { tick:    110, x: 1900,y: 300, },
+    //         { tick:    110, x: 1900,y: 400, },
+    //         { tick:    110, x: 1900,y: 500, },
+    //         { tick:    110, x: 1900,y: 600, },
+    //         { tick:    120, x: 1900,y: 100, },
+    //         { tick:    120, x: 1900,y: 200, },
+    //         { tick:    120, x: 1900,y: 300, },
+    //         { tick:    120, x: 1900,y: 400, },
+    //         { tick:    120, x: 1900,y: 500, },
+    //         { tick:    120, x: 1900,y: 600, },
+    //         { tick:    130, x: 1900,y: 100, },
+    //         { tick:    130, x: 1900,y: 200, },
+    //         { tick:    130, x: 1900,y: 300, },
+    //         { tick:    130, x: 1900,y: 400, },
+    //         { tick:    130, x: 1900,y: 500, },
+    //         { tick:    130, x: 1900,y: 600, },
+    //         { tick:    140, x: 1900,y: 100, },
+    //         { tick:    140, x: 1900,y: 200, },
+    //         { tick:    140, x: 1900,y: 300, },
+    //         { tick:    140, x: 1900,y: 400, },
+    //         { tick:    140, x: 1900,y: 500, },
+    //         { tick:    140, x: 1900,y: 600, },
+    //         { tick:    150, x: 1900,y: 100, },
+    //         { tick:    150, x: 1900,y: 200, },
+    //         { tick:    150, x: 1900,y: 300, },
+    //         { tick:    150, x: 1900,y: 400, },
+    //         { tick:    150, x: 1900,y: 500, },
+    //         { tick:    150, x: 1900,y: 600, },
+    //         { tick:    160, x: 1900,y: 100, },
+    //         { tick:    160, x: 1900,y: 200, },
+    //         { tick:    160, x: 1900,y: 300, },
+    //         { tick:    160, x: 1900,y: 400, },
+    //         { tick:    160, x: 1900,y: 500, },
+    //         { tick:    160, x: 1900,y: 600, },
+    //         { tick:    170, x: 1900,y: 100, },
+    //         { tick:    170, x: 1900,y: 200, },
+    //         { tick:    170, x: 1900,y: 300, },
+    //         { tick:    170, x: 1900,y: 400, },
+    //         { tick:    170, x: 1900,y: 500, },
+    //         { tick:    170, x: 1900,y: 600, },
+    //         { tick:    180, x: 1900,y: 100, },
+    //         { tick:    180, x: 1900,y: 200, },
+    //         { tick:    180, x: 1900,y: 300, },
+    //         { tick:    180, x: 1900,y: 400, },
+    //         { tick:    180, x: 1900,y: 500, },
+    //         { tick:    180, x: 1900,y: 600, },
+    //         { tick:    190, x: 1900,y: 100, },
+    //         { tick:    190, x: 1900,y: 200, },
+    //         { tick:    190, x: 1900,y: 300, },
+    //         { tick:    190, x: 1900,y: 400, },
+    //         { tick:    190, x: 1900,y: 500, },
+    //         { tick:    190, x: 1900,y: 600, },
+    //         { tick:    200, x: 1900,y: 100, },
+    //         { tick:    200, x: 1900,y: 200, },
+    //         { tick:    200, x: 1900,y: 300, },
+    //         { tick:    200, x: 1900,y: 400, },
+    //         { tick:    200, x: 1900,y: 500, },
+    //         { tick:    200, x: 1900,y: 600, },
+    //         { tick:    210, x: 1900,y: 100, },
+    //         { tick:    210, x: 1900,y: 200, },
+    //         { tick:    210, x: 1900,y: 300, },
+    //         { tick:    210, x: 1900,y: 400, },
+    //         { tick:    210, x: 1900,y: 500, },
+    //         { tick:    210, x: 1900,y: 600, },
+    //         { tick:    220, x: 1900,y: 100, },
+    //         { tick:    220, x: 1900,y: 200, },
+    //         { tick:    220, x: 1900,y: 300, },
+    //         { tick:    220, x: 1900,y: 400, },
+    //         { tick:    220, x: 1900,y: 500, },
+    //         { tick:    220, x: 1900,y: 600, },
+    //         // { tick:    70, x:91500,y: 800, ai: "move12",  params: "noob"},
+    //         // { tick:    90, x:91500,y: 800, ai: "move12",  params: "noob"},
+    //         // { tick:   110, x: 1500,y: 780, ai: "move12",  params: "noob"},
+    //         // { tick:   130, x: 1500,y: 760, ai: "move12",  params: "noob"},
+    //         // { tick:   150, x: 1500,y: 740, ai: "move12",  params: "noob"},
+    //         // { tick:   170, x: 1500,y: 720, ai: "move12",  params: "noob",},
+    //         // { tick: 200,x: 1500,y: 200, design: "superEnemy", },
+    //         //{ tick: 50,x: 1500,y: 300, ai: "enemy1", design: "enemy1", haveUpgrade: { design:"upgrade1" }, params: "enemy1", },
+    //         // { tick: 300,x: 1500,y: 400, },
+    //         // { tick: 350,x: 1500,y: 500, },
+    //     ],
+    //     ship: { x: 100, y: 500, design: "upgrade1" },
+    //     background: [
+    //         "city1",
+    //         "city2",
+    //         "city3",
+    //     ],
+    //     speed: 3,
+    //     length: 300
+    // },
 
     "empty":{
         enemies:[],
@@ -774,15 +1004,57 @@ const LEVELS={
                 "enemy1":{
                     ...defaultEnemy.design,
                 }, 
-                "superEnemy":{
+
+                "enemy2":{
                     ...defaultEnemy.design,
-                    width: 35,
-                    height: 55,
-                    sprite: { imgSrc: "images/enemies/enemy2.png", width: 48, height: 69 }
+                    width: 70,
+                    height: 20,
+                    sprite: { imgSrc: "images/enemies/enemy2.png", width: 128, height: 128 }
                 },
+
+                "enemy3":{
+                    ...defaultEnemy.design,
+                    width: 70,
+                    height: 25,
+                    sprite: { imgSrc: "images/enemies/enemy3.png", width: 128, height: 128 }
+                },
+
+                "enemy4":{
+                    ...defaultEnemy.design,
+                    width: 70,
+                    height: 30,
+                    sprite: { imgSrc: "images/enemies/enemy4.png", width: 128, height: 128, offsetX: -20, offsetY: -50 }
+                },
+
+                "enemy5":{
+                    ...defaultEnemy.design,
+                    width: 70,
+                    height: 20,
+                    sprite: { imgSrc: "images/enemies/enemy5.png", width: 128, height: 128 }
+                },
+
+                "boss1":{
+                    ...defaultEnemy.design,
+                    width: 1000,
+                    height: 350,
+                    sprite: { imgSrc: "images/enemies/enemy4.png", width: 117 * 10, height: 75 * 10, }
+                },
+
+
+
+
+                "wall1":{
+                    ...defaultWall.design,
+                },
+
+                
+
+
+
                 "menuStart": {
                     ...defaultMenuEnemy.design,
-                    text: "START",
+                    // text: "START",
+                    sprite: { imgSrc: "images/menu/start.png", width: 300, height: 50},
                 },
                 "menuHighscore": {
                     ...defaultMenuEnemy.design,
@@ -790,11 +1062,14 @@ const LEVELS={
                 },
                 "menuEdit": {
                     ...defaultMenuEnemy.design,
-                    text: "EDIT"
+                    // text: "EDIT",
+                    sprite: { imgSrc: "images/menu/edit.png", width: 300, height: 50},
                 },
-                "wall1":{
-                    ...defaultWall.design,
+                "menuLevel":{
+                    ...defaultMenuEnemy.design,
                 },
+
+
             },
 
             "ai":{
@@ -805,100 +1080,154 @@ const LEVELS={
                 },
                 "enemy1": {
                     ...defaultEnemy.ai,
+                    addons: ["directionX", "directionY"]
                 },
-                "superEnemy": {
-                    ...defaultEnemy.ai,
-                    tick: function() {
 
-                        if(this.ticksPassed() === 0) this.direction = { x: -1, y: -1 };
+                // "superEnemy": {
+                //     ...defaultEnemy.ai,
+                //     tick: function() {
 
-                        // if(this.y + this.direction.y * this.speed.y + this.sprite.height >= game.MAP_HEIGHT - 1){
-                        //     this.direction.y = -1;
-                        // } else if(this.y + this.direction.y * this.speed.y < 0) {
-                        //     this.direction.y = 1;
-                        // }
+                //         if(this.ticksPassed() === 0) this.direction = { x: -1, y: -1 };
+
+                //         // if(this.y + this.direction.y * this.speed.y + this.sprite.height >= game.MAP_HEIGHT - 1){
+                //         //     this.direction.y = -1;
+                //         // } else if(this.y + this.direction.y * this.speed.y < 0) {
+                //         //     this.direction.y = 1;
+                //         // }
                         
-                        this.moveToDir();
+                //         this.moveToDir();
 
-                        if( this.ticksPassed() % this.fireRate == 0 ){
-                            this.fire();
-                        }
-                    },
-                    fire: function() {
-                        if(this.bullets) { 
-                            for(let i = 0; i < this.bullets.length; i++){
-                                let bullet = new Bullet( { 
-                                    x: this.x, 
-                                    y: this.y + this.height / 2,
-                                    ...this.bullets[i],
-                                } );
-                                bullet.y -= bullet.height / 2;
-                                game.objects.push( bullet );
-                            }
-                        }
-                    },
-                },
-                "superEnemyDown": {
-                    ...defaultEnemy.ai,
-                    tick: function() {
+                //         if( this.ticksPassed() % this.fireRate == 0 ){
+                //             this.fire();
+                //         }
+                //     },
+                //     fire: function() {
+                //         if(this.bullets) { 
+                //             for(let i = 0; i < this.bullets.length; i++){
+                //                 let bullet = new Bullet( { 
+                //                     x: this.x, 
+                //                     y: this.y + this.height / 2,
+                //                     ...this.bullets[i],
+                //                 } );
+                //                 bullet.y -= bullet.height / 2;
+                //                 game.objects.push( bullet );
+                //             }
+                //         }
+                //     },
+                // },
+                // "superEnemyDown": {
+                //     ...defaultEnemy.ai,
+                //     tick: function() {
 
-                        if(this.ticksPassed() === 0) this.direction = { x: -1, y: 1 };
+                //         if(this.ticksPassed() === 0) this.direction = { x: -1, y: 1 };
 
-                        // if(this.y + this.direction.y * this.speed.y + this.sprite.height >= game.MAP_HEIGHT - 1){
-                        //     this.direction.y = -1;
-                        // } else if(this.y + this.direction.y * this.speed.y < 0) {
-                        //     this.direction.y = 1;
-                        // }
+                //         // if(this.y + this.direction.y * this.speed.y + this.sprite.height >= game.MAP_HEIGHT - 1){
+                //         //     this.direction.y = -1;
+                //         // } else if(this.y + this.direction.y * this.speed.y < 0) {
+                //         //     this.direction.y = 1;
+                //         // }
                         
-                        this.moveToDir();
+                //         this.moveToDir();
 
-                        if( this.ticksPassed() % this.fireRate == 0 ){
-                            this.fire();
-                        }
-                    },
-                    fire: function() {
-                        for(let i = 0; i < this.bullets.length; i++){
-                            let bullet = new Bullet( { 
-                                x: this.x, 
-                                y: this.y + this.height / 2,
-                                ...this.bullets[i],
-                            } );
-                            bullet.y -= bullet.height / 2;
-                            game.objects.push( bullet );
-                        }
-                    },
-                },
-                "move12": {
-                    ...defaultEnemy.ai,
-                    tick: function() {
-                        if(this.ticksPassed() === 0) {
-                            this.direction = { x: -1, y: 0 };
-                        } else if(this.ticksPassed() === 50) {
-                            this.direction = { x: +1, y: -1 };
-                        } else if(this.ticksPassed() === 100) {
-                            this.direction = { x: -1, y: 0 };
-                        }
-                        this.moveToDir();
+                //         if( this.ticksPassed() % this.fireRate == 0 ){
+                //             this.fire();
+                //         }
+                //     },
+                //     fire: function() {
+                //         for(let i = 0; i < this.bullets.length; i++){
+                //             let bullet = new Bullet( { 
+                //                 x: this.x, 
+                //                 y: this.y + this.height / 2,
+                //                 ...this.bullets[i],
+                //             } );
+                //             bullet.y -= bullet.height / 2;
+                //             game.objects.push( bullet );
+                //         }
+                //     },
+                // },
+                // "move12": {
+                //     ...defaultEnemy.ai,
+                //     tick: function() {
+                //         if(this.ticksPassed() === 0) {
+                //             this.direction = { x: -1, y: 0 };
+                //         } else if(this.ticksPassed() === 50) {
+                //             this.direction = { x: +1, y: -1 };
+                //         } else if(this.ticksPassed() === 100) {
+                //             this.direction = { x: -1, y: 0 };
+                //         }
+                //         this.moveToDir();
      
-                        if( this.ticksPassed() % this.fireRate == 0 ){
-                            this.fire();
-                        }
+                //         if( this.ticksPassed() % this.fireRate == 0 ){
+                //             this.fire();
+                //         }
+                //     },
+                // },
+
+                "sin":{
+                    ...defaultEnemy.ai,
+                    addons: ["amplitude", "frequency", "startPoint"],
+                    init(){
+                        this.direction = { x: -1, y: 0 };
+                        this.amplitude = +this.amplitude || 200;
+                        this.frequency = +this.frequency || 100;
+                        this.startPoint = +this.startPoint || 400;
                     },
+
+                    tick: function(){
+                        if( this.ticksPassed() && this.ticksPassed() % this.fireRate === 0 ) this.fire();
+                        
+                        this.y = (Math.sin(this.x / this.frequency) + 0.5) * this.amplitude + this.startPoint;
+
+                        this.moveToDir();
+                    }
                 },
+
+                "circle": {
+                    ...defaultEnemy.ai,
+                    addons: [ "centerX", "centerY", "dr", "speed" ],
+                    init: function(){
+                        this.centerX = +this.centerX || 500;
+                        this.centerY = +this.centerY || 500;
+                        this.radius = 100;
+                        this.dr = +this.dr || 1;
+                        this.speed = +this.speed || 10;
+                        this.currSpeed = this.speed;
+                    },
+
+                    tick: function(){
+                        if( this.ticksPassed() && this.ticksPassed() % this.fireRate === 0 ) this.fire();
+                        let alpha = this.ticksPassed() / ( this.radius / this.currSpeed);
+                    
+
+                        this.radius += this.dr;
+                        this.currSpeed += 0.1;
+
+                        this.x = Math.sin(alpha) * ((this.radius)) + this.centerX;
+                        this.y = Math.cos(alpha) * ((this.radius)) + this.centerY;
+                    }
+                },
+
+
+
+
+
+
+                "wall1":{
+                    ...defaultWall.ai,
+                    addons: ["width"],
+                },
+
+
+
+
+
+
+
                 "menuStart": {
                     ...defaultMenuEnemy.ai,
                     activateMenu: function(){
-                        game.ship.die();
-                        for(let i = 0; i < game.objects.length; i++){
-                            let currObj = game.objects[i];
-                            if(currObj.type === "ME"){
-                                currObj.die();
-                            }
-                        }
 
-                        
-
-                        game.loadLevel("custom");
+                        this.showLevels();
                     }
                 },
                 "menuHighscore": {
@@ -910,11 +1239,20 @@ const LEVELS={
                 "menuEdit": {
                     ...defaultMenuEnemy.ai,
                     activateMenu: function(){
-                        game.loadLevel("editor"); 
+                        this.showLevels("menuLevelEdit");
                     }
                 },
-                "wall1":{
-                    ...defaultWall.ai,
+                "menuLevel":{
+                    ...defaultMenuEnemy.ai,
+                    activateMenu: function(){
+                        game.loadLevel(this.text);
+                    }
+                },
+                "menuLevelEdit":{
+                    ...defaultMenuEnemy.ai,
+                    activateMenu: function(){
+                        game.loadLevel("editor", this.text);
+                    }
                 }
             },
 
@@ -930,18 +1268,29 @@ const LEVELS={
                 "enemy1":{
                     ...defaultEnemy.params,
                 },
-                "superEnemy": {
+                // "superEnemy": {
+                //     ...defaultEnemy.params,
+                //     dmg: 1,
+                //     speed: { x: 10, y: 5 },
+                //     hp: 3,
+                //     fireRate: 50,
+                //     bullets: [
+                //         { design: "enemyBullet1" },
+                //         { design: "enemyBullet1", ai: "enemyBulletUp" },
+                //         { design: "enemyBullet1", ai: "enemyBulletDown" },
+                //     ]
+                // },
+                "boss1":{
                     ...defaultEnemy.params,
-                    dmg: 1,
-                    speed: { x: 10, y: 5 },
-                    hp: 3,
-                    fireRate: 50,
+                    hp: 50,
                     bullets: [
-                        { design: "enemyBullet1" },
-                        { design: "enemyBullet1", ai: "enemyBulletUp" },
-                        { design: "enemyBullet1", ai: "enemyBulletDown" },
-                    ]
+                        { design: "bossBullet1", ai: "enemyBullet1", params: "enemyBullet1" },
+                    ],
                 },
+
+
+
+
                 "menuStart": {
                     ...defaultMenuEnemy.params,
                 },
@@ -953,7 +1302,10 @@ const LEVELS={
                 },
                 "wall1":{
                     ...defaultWall.params,
-                }
+                },
+                "menuLevel":{
+                    ...defaultMenuEnemy.params,
+                },
             },
 
         },
@@ -983,15 +1335,25 @@ const LEVELS={
                 "menuShip": {
                     init: function(){
                         this.type = "MS";
-                        this.currMenuID = 1;
+                        this.currMenuID = 0;
                     },
 
                     tick: function(){
-                        let currMenuItem = game.objects[this.currMenuID];
+                        this.createMenuItemsArray();
+
+                        let currMenuItem = this.menuItems[this.currMenuID];
                         if(!currMenuItem || currMenuItem.type !== "ME"){
                             this.moveToPrevMenu();
                         }
                         this.moveToCurrentMenu();
+                    },
+
+                    createMenuItemsArray(){
+                        this.menuItems = [];
+                        for(let i = 0; i < game.objects.length; i++){
+                            let curr = game.objects[i];
+                            if(curr.type == "ME") this.menuItems.push(curr);
+                        }
                     },
 
                     keyHandler: function(key){
@@ -1012,7 +1374,7 @@ const LEVELS={
                     },
 
                     moveToCurrentMenu: function(){
-                        let currMenuItem = game.objects[this.currMenuID];
+                        let currMenuItem = this.menuItems[this.currMenuID];
                         if(!currMenuItem) return;
 
                         let distance = 60;
@@ -1020,15 +1382,17 @@ const LEVELS={
                     },
 
                     fire: function(){
-                        game.objects[this.currMenuID].activateMenu();
+
+                        this.createMenuItemsArray();
+                        if(this.menuItems[this.currMenuID]) this.menuItems[this.currMenuID].activateMenu();
                     },
 
                     moveToNextMenu: function(){
                         let newId = this.currMenuID + 1;
 
-                        for(; newId < game.objects.length; newId++){
+                        for(; newId < this.menuItems.length; newId++){
 
-                            if(game.objects[newId].type === 'ME'){
+                            if(this.menuItems[newId].type === 'ME'){
                                 this.currMenuID = newId;
                                 return;
                             }
@@ -1041,7 +1405,7 @@ const LEVELS={
 
                         for(; newId >= 0; newId--){
 
-                            if(game.objects[newId].type === 'ME'){
+                            if(this.menuItems[newId].type === 'ME'){
                                 this.currMenuID = newId;
                                 return;
                             }
@@ -1069,15 +1433,21 @@ const LEVELS={
 
             "design": {
                 "enemyBullet1": {
-                    width:54,
-                    height:18,
-                    sprite:{ imgSrc: "images/bullets/enemy_bullet1.png", width: 54, height: 18 },
+                    width: 32,
+                    height: 7,
+                    sprite: { imgSrc: "images/bullets/enemy_bullet1.png", width: 32, height: 32, },
                 },
 
                 "shipBullet1":{
-                    width:54,
-                    height:18,
-                    sprite:{ imgSrc: "images/bullets/bullet1.png", width: 54, height: 18 },
+                    width: 50,
+                    height: 15,
+                    sprite: { imgSrc: "images/bullets/bullet1.png", width: 128, height: 128, offsetY: -57, offsetX: -45 },
+                },
+
+                "bossBullet1":{
+                    width: 20,
+                    height: 20,
+                    sprite: { imgSrc: "images/bullets/boss_bullet1.png", width: 256, height: 256, offsetX: -139, offsetY: -117 }
                 }
             },
 
@@ -1151,6 +1521,19 @@ const LEVELS={
                                 break;
                             }
                     },
+                },
+
+                "bossBullet1": {
+                    init: function(){
+                        this.axis = (this.axis || Math.PI) % Math.PI * 2;
+                        this.vSpeed = this.vSpeed || this.speed.x;
+                    },
+
+                    tick: function(){
+                        this.speed.x = Math.sin(this.axis) * this.vSpeed;
+                        this.speed.x = Math.cos(this.axis) * this.vSpeed;
+                        this.direction.x = this.axis > Math.PI / 2 ;
+                    }
                 }
 
             },
@@ -1242,19 +1625,19 @@ const LEVELS={
     "backgrounds":
     {
         "city3": {
-            src: "./images/backgrounds/city1.png",
+            src: "images/backgrounds/city1.png",
             width: 4267,
             height: 2133,
             speed: 5
         },
         "city2": {
-            src: "./images/backgrounds/city2.png",
+            src: "images/backgrounds/city2.png",
             width: 1280,
             height: 720,
             speed: 5
         },
         "city1": {
-            src: "./images/backgrounds/city3.png",
+            src: "images/backgrounds/city3.png",
             width: 1920,
             height: 960,
             speed: 5
@@ -1263,5 +1646,16 @@ const LEVELS={
     }
 }
 
-LEVELS["custom"] = JSON.parse(`{"enemies":[{"tick":10,"x":1900,"y":500},{"tick":20,"x":1900,"y":400},{"tick":20,"x":1900,"y":600},{"tick":28,"x":1900,"y":700},{"tick":28,"x":1900,"y":300},{"tick":36,"x":1900,"y":200},{"tick":36,"x":1900,"y":800},{"tick":44,"x":1900,"y":900},{"tick":44,"x":1900,"y":100},{"tick":197,"x":1500,"y":500,"design":"superEnemy"},{"tick":200,"x":1500,"y":500,"design":"superEnemy","ai":"superEnemyDown"},{"tick":205,"x":1500,"y":500,"design":"superEnemy"},{"tick":211,"x":1500,"y":500,"design":"superEnemy","ai":"superEnemyDown"},{"tick":218,"x":1500,"y":500,"design":"superEnemy"},{"tick":225,"x":1500,"y":500,"design":"superEnemy","ai":"superEnemyDown"},{"tick":235,"x":1500,"y":500,"design":"superEnemy"},{"tick":244,"x":1500,"y":500,"design":"superEnemy","ai":"superEnemyDown"},{"tick":252,"x":1500,"y":500,"design":"superEnemy"},{"tick":263,"x":1500,"y":500,"design":"superEnemy","ai":"superEnemyDown"},{"tick":273,"x":1500,"y":500,"design":"superEnemy"},{"tick":284,"x":1500,"y":500,"design":"superEnemy","ai":"superEnemyDown"},{"tick":386,"x":1800,"y":700,"ai":"move12","design":"enemy1","params":"enemy1"},{"tick":392,"x":1800,"y":700,"ai":"move12"},{"tick":399,"x":1800,"y":700,"ai":"move12"},{"tick":403,"x":1800,"y":700,"ai":"move12"},{"tick":408,"x":1800,"y":700,"ai":"move12"},{"tick":416,"x":1800,"y":700,"ai":"move12"},{"tick":424,"x":1800,"y":700,"ai":"move12"},{"tick":430,"x":1800,"y":700,"ai":"move12"},{"tick":437,"x":1800,"y":700,"ai":"move12"},{"tick":446,"x":1800,"y":700,"ai":"move12"},{"tick":451,"x":1800,"y":700,"ai":"move12"}],"speed":3}`);
-LEVELS["custom"].ship = { x: 100, y: 500, design: "upgrade1", hp: 3, };
+ajaj("/api/load_levels/", {}, function(ret){
+    if(!ret.ok) console.log("Can't load", ret.error);
+
+    console.log("Loaded levels", ret.levels);
+
+    let levels = ret.levels;
+    for(let i = 0; i < levels.length; i++){
+        let curr = levels[i];
+
+        LEVELS[curr.name] = curr.data;
+        LEVELS[curr.name].ship = { x: 100, y: 500, design: "upgrade1", hp: 3, };
+    }
+})
